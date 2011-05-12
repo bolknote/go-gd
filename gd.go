@@ -8,6 +8,9 @@ package gd
 // #include <gdfontg.h>
 import "C"
 import "os"
+import "path/filepath"
+import "strings"
+import "io/ioutil"
 import . "unsafe"
 
 type Image struct {img C.gdImagePtr}
@@ -393,4 +396,29 @@ func (p *Image) OpenPolygon(points [](struct{x, y int}), c Color) {
 
 func (p *Image) FilledPolygon(points [](struct{x, y int}), c Color) {
     C.gdImageFilledPolygon(p.img, (C.gdPointPtr)(Pointer(&points)), C.int(len(points)), C.int(c))
+}
+
+func searchttf(dir string) (out []string){
+    out, _ = filepath.Glob(filepath.Join(dir, "*.[tT][tT][fF]"))
+
+    files, e := ioutil.ReadDir(dir)
+    if e == nil {
+        for _, file := range files {
+            if file.IsDirectory() {
+                entry := filepath.Join(dir, file.Name)
+
+                out = append(out, searchttf(entry)...)
+            }
+        }
+    }
+
+    return
+}
+
+func GetTtfFonts() (list []string) {
+    for _, dir := range strings.Split(C.DEFAULT_FONTPATH, C.PATHSEPARATOR, -1) {
+        list = append(list, searchttf(dir)...)
+    }
+
+    return
 }
