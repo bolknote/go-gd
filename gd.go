@@ -341,7 +341,7 @@ func (p *Image) SetBrush(brush Image) {
     C.gdImageSetBrush(p.img, brush.img)
 }
 
-func GetFont(size byte) *Font{
+func GetFont(size byte) *Font {
     switch size {
     case FONTTINY:
         return &Font{fnt: C.gdFontGetTiny()}
@@ -367,14 +367,22 @@ func (p *Image) CharUp(font *Font, x, y int, c string, color Color) {
 }
 
 func (p *Image) String(font *Font, x, y int, s string, color Color) {
-    C.gdImageString(p.img, (*font).fnt, C.int(x), C.int(y), (*C.uchar)(Pointer(&s)), C.int(color))
+    C.gdImageString(p.img, (*font).fnt, C.int(x), C.int(y), (*C.uchar)(Pointer(C.CString(s))), C.int(color))
 }
 
 func (p *Image) StringUp(font *Font, x, y int, s string, color Color) {
-    C.gdImageStringUp(p.img, (*font).fnt, C.int(x), C.int(y), (*C.uchar)(Pointer(&s)), C.int(color))
+    C.gdImageStringUp(p.img, (*font).fnt, C.int(x), C.int(y), (*C.uchar)(Pointer(C.CString(s))), C.int(color))
 }
 
+func (p *Image) StringFT(fg Color, fontname string, ptsize, angle, x, y int, str string) (brect [8]int) {
+    C.gdFontCacheSetup()
+    defer C.gdFontCacheShutdown()
 
+    C.gdImageStringFT(p.img, (*C.int)(Pointer(&brect)), C.int(fg), C.CString(fontname), C.double(ptsize),
+        C.double(angle), C.int(x), C.int(y), C.CString(str))
+
+    return
+}
 
 
 
