@@ -527,5 +527,23 @@ func (p *Image) Brightness(brightness int) {
 }
 
 func (p *Image) Contrast(contrast float64) {
+    contrast = (100.0 - contrast) / 100.0
 
+    corr := func(c int, contrast float64) int {
+        f := float64(c) / 255.0
+        f -= .5
+        f *= contrast
+        f += .5
+        f *= 255.0
+
+        return min(255, max(0, int(f)))
+    }
+
+    p.filter(func(r, g, b, a int) (int, int, int, int) {
+        r = corr(r, contrast)
+        g = corr(g, contrast)
+        b = corr(b, contrast)
+
+        return r, g, b, a
+    })
 }
