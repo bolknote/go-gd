@@ -376,7 +376,7 @@ func (p *Image) StringUp(font *Font, x, y int, s string, color Color) {
     C.gdImageStringUp(p.img, (*font).fnt, C.int(x), C.int(y), (*C.uchar)(Pointer(C.CString(s))), C.int(color))
 }
 
-func (p *Image) StringFT(fg Color, fontname string, ptsize, angle, x, y int, str string) (brect [8]int) {
+func (p *Image) StringFT(fg Color, fontname string, ptsize, angle float64, x, y int, str string) (brect [8]int) {
     C.gdFontCacheSetup()
     defer C.gdFontCacheShutdown()
 
@@ -512,8 +512,11 @@ func max(n1, n2 int) int {
     return n2
 }
 
-
 func (p *Image) Brightness(brightness int) {
+    if brightness == 0 {
+        return
+    }
+
     p.filter(func(r, g, b, a int) (int, int, int, int) {
         r = min(255, max(r + brightness, 0))
         g = min(255, max(g + brightness, 0))
@@ -521,4 +524,8 @@ func (p *Image) Brightness(brightness int) {
 
         return r, g, b, a
     })
+}
+
+func (p *Image) Contrast(contrast float64) {
+
 }
