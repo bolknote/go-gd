@@ -16,6 +16,6 @@ CLEANFILES+=img
 
 include ${GOROOT}/src/Make.pkg
 
-img: install img.go
-	$(GC) img.go
-	$(LD) -o $@ img.$O
+s: install sample.go
+	$(GC) sample.go
+	$(LD) -o $@ sample.$O
