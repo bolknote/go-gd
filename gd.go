@@ -548,3 +548,14 @@ func (p *Image) Contrast(contrast float64) {
         return r, g, b, a
     })
 }
+
+func (p *Image) Color(r, g, b, a int) {
+    p.filter(func(ri, gi, bi, ai int) (int, int, int, int) {
+        ri = max(0, min(255, r+ri))
+        gi = max(0, min(255, g+gi))
+        bi = max(0, min(255, b+bi))
+        ai = max(0, min(255, a+ai))
+
+        return ri, gi, bi, ai
+    })
+}
