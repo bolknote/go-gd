@@ -1,4 +1,4 @@
-package gd
+    package gd
 // #include <gd.h>
 // #include <gdfx.h>
 // #include <gdfontt.h>
@@ -459,14 +459,14 @@ func (p *Image) getpixelfunc() (func(p *Image, x, y int) Color) {
     return func(p *Image, x, y int) Color { return p.GetPixel(x,y) }
 }
 
-func (p *Image) filter(flt func(r, g, b, a int) (int, int, int, int)) {
+func (p *Image) filter(flt func(r, g, b, a, x, y int) (int, int, int, int)) {
     f := p.getpixelfunc()
 
     sx, sy := p.Sx(), p.Sy()
     for y := 0; y<sy; y++ {
         for x := 0; x<sx; x++ {
             rgba := p.ColorsForIndex(f(p, x, y))
-            r, g, b, a := flt(rgba["red"], rgba["green"], rgba["blue"], rgba["alpha"])
+            r, g, b, a := flt(rgba["red"], rgba["green"], rgba["blue"], rgba["alpha"], x, y)
 
             newpxl := p.ColorAllocateAlpha(r, g, b, a)
             if newpxl == -1 {
@@ -479,7 +479,7 @@ func (p *Image) filter(flt func(r, g, b, a int) (int, int, int, int)) {
 }
 
 func (p *Image) GrayScale() {
-    p.filter(func(r, g, b, a int) (int, int, int, int) {
+    p.filter(func(r, g, b, a, x, y int) (int, int, int, int) {
         c := (int) (.299 * float64(r) + .587 * float64(g) + .114 * float64(b))
 
         return c, c, c, a
@@ -487,7 +487,7 @@ func (p *Image) GrayScale() {
 }
 
 func (p *Image) Negate() {
-    p.filter(func(r, g, b, a int) (int, int, int, int) {
+    p.filter(func(r, g, b, a, x, y int) (int, int, int, int) {
         r = 255 - r
         g = 255 - g
         b = 255 - b
@@ -517,7 +517,7 @@ func (p *Image) Brightness(brightness int) {
         return
     }
 
-    p.filter(func(r, g, b, a int) (int, int, int, int) {
+    p.filter(func(r, g, b, a, x, y int) (int, int, int, int) {
         r = min(255, max(r + brightness, 0))
         g = min(255, max(g + brightness, 0))
         b = min(255, max(b + brightness, 0))
@@ -540,7 +540,7 @@ func (p *Image) Contrast(contrast float64) {
         return min(255, max(0, int(f)))
     }
 
-    p.filter(func(r, g, b, a int) (int, int, int, int) {
+    p.filter(func(r, g, b, a, x, y int) (int, int, int, int) {
         r = corr(r, contrast)
         g = corr(g, contrast)
         b = corr(b, contrast)
@@ -550,7 +550,7 @@ func (p *Image) Contrast(contrast float64) {
 }
 
 func (p *Image) Color(r, g, b, a int) {
-    p.filter(func(ri, gi, bi, ai int) (int, int, int, int) {
+    p.filter(func(ri, gi, bi, ai, x, y int) (int, int, int, int) {
         ri = max(0, min(255, r+ri))
         gi = max(0, min(255, g+gi))
         bi = max(0, min(255, b+bi))
@@ -560,12 +560,52 @@ func (p *Image) Color(r, g, b, a int) {
     })
 }
 
-func (p *Image) Convolution(filter [3][3]float, filter_div, offset float) {
-    srcback := CreateTrueColor(p.Sx(), p.Sy())
+func (p *Image) Convolution(filter [3][3]float32, filter_div, offset float32) {
+    sx, sy := p.Sx(), p.Sy()
+    srcback := CreateTrueColor(sx, sy)
 
     srcback.SaveAlpha(true)
     newpxl := srcback.ColorAllocateAlpha(0, 0, 0, 127)
     srcback.Fill(0, 0, newpxl)
 
-    srcback.Copy(p, 0, 0, 0, 0, p.Sx(), p.Sy())
+    srcback.Copy(p, 0, 0, 0, 0, sx, sy)
+    defer srcback.Destroy()
+
+    var af func(p *Image, c int) int
+
+    if p.TrueColor() {
+        af = func(p *Image, c int) int { return (c & 0x7F000000) >> 24 }
+    } else {
+        af = func(p *Image, c int) int { return (int)((*p.img).alpha[c]) }
+    }
+
+    f := p.getpixelfunc()
+
+    p.filter(func(r, g, b, a, x, y int) (int, int, int, int) {
+        var newr, newg, newb float32
+        newa := af(srcback, int(newpxl))
+
+        for j := 0; j<3; j++ {
+            yv := min(max(y - 1 + j, 0), sy - 1)
+
+            for i := 0; i<3; i++ {
+                pxl := srcback.ColorsForIndex(f(srcback, min(max(x - 1 + i, 0), sx - 1), yv))
+
+                newr += float32(pxl["red"]) * filter[j][i]
+                newg += float32(pxl["green"]) * filter[j][i]
+                newb += float32(pxl["blue"]) * filter[j][i]
+            }
+        }
+
+        newr = (newr / filter_div) + offset
+        newg = (newg / filter_div) + offset
+        newb = (newb / filter_div) + offset
+
+        r = min(255, max(0, int(newr)))
+        g = min(255, max(0, int(newg)))
+        b = min(255, max(0, int(newb)))
+
+        return r, g, b, newa
+    })
 }
+
