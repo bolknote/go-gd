@@ -2,8 +2,8 @@ package gd
 // #include <gd.h>
 // #include <gdfx.h>
 import "C"
-import . "unsafe"
 import "os"
+import . "unsafe"
 
 type Image struct {img C.gdImagePtr}
 type Color int
@@ -36,6 +36,31 @@ func CreateFromJpeg(infile string) *Image {
     panic(os.NewError("Error occurred while opening file."))
 }
 
+
+func CreateFromGif(infile string) *Image {
+    file := C.fopen(C.CString(infile), C.CString("rb"))
+
+    if file != nil {
+        defer C.fclose(file)
+
+        return &Image{img: C.gdImageCreateFromGif(file)}
+    }
+
+    panic(os.NewError("Error occurred while opening file."))
+}
+
+func CreateFromPng(infile string) *Image {
+    file := C.fopen(C.CString(infile), C.CString("rb"))
+
+    if file != nil {
+        defer C.fclose(file)
+
+        return &Image{img: C.gdImageCreateFromPng(file)}
+    }
+
+    panic(os.NewError("Error occurred while opening file."))
+}
+
 func (p *Image) Destroy() {
     if p != nil && p.img != nil {
         C.gdImageDestroy(p.img)
@@ -57,13 +82,65 @@ func (p *Image) Jpeg(out string, quality int) {
     panic(os.NewError("Error occurred while opening file for writing."))
 }
 
+func (p *Image) Png(out string) {
+    file := C.fopen(C.CString(out), C.CString("wb"))
+
+    if file != nil {
+        defer C.fclose(file)
+
+        C.gdImagePng(p.img, file)
+    }
+
+    panic(os.NewError("Error occurred while opening file for writing."))
+}
+
+func (p *Image) Gif(out string) {
+    file := C.fopen(C.CString(out), C.CString("wb"))
+
+    if file != nil {
+        defer C.fclose(file)
+
+        C.gdImageGif(p.img, file)
+    }
+
+    panic(os.NewError("Error occurred while opening file for writing."))
+}
+
+func (p *Image) ColorTransparent(color Color) {
+    C.gdImageColorTransparent(p.img, C.int(color))
+}
+
+func (p *Image) PaletteCopy(dst Image) {
+    C.gdImagePaletteCopy(dst.img, p.img)
+}
+
 func (p *Image) CopyResampled(dst Image, dstX, dstY, srcX, srcY, dstW, dstH, srcW, srcH int) {
     C.gdImageCopyResampled(dst.img, p.img, C.int(dstX), C.int(dstY), C.int(srcX), C.int(srcY),
         C.int(dstW), C.int(dstH), C.int(srcW), C.int(srcH))
 }
 
+func (p *Image) CopyResized(dst Image, dstX, dstY, srcX, srcY, dstW, dstH, srcW, srcH int) {
+    C.gdImageCopyResized(dst.img, p.img, C.int(dstX), C.int(dstY), C.int(srcX), C.int(srcY),
+        C.int(dstW), C.int(dstH), C.int(srcW), C.int(srcH))
+}
+
+func (p *Image) CopyMerge(dst Image, dstX, dstY, srcX, srcY, w, h, pct int) {
+    C.gdImageCopyMerge(dst.img, p.img, C.int(dstX), C.int(dstY), C.int(srcX), C.int(srcY),
+        C.int(w), C.int(h), C.int(pct))
+}
+
+func (p *Image) CopyMergeGray(dst Image, dstX, dstY, srcX, srcY, w, h, pct int) {
+    C.gdImageCopyMergeGray(dst.img, p.img, C.int(dstX), C.int(dstY), C.int(srcX), C.int(srcY),
+        C.int(w), C.int(h), C.int(pct))
+}
+
 func (p *Image) Copy(dst Image, dstX, dstY, srcX, srcY, w, h int) {
     C.gdImageCopy(dst.img, p.img, C.int(dstX), C.int(dstY), C.int(srcX), C.int(srcY), C.int(w), C.int(h))
+}
+
+func (p *Image) CopyRotated(dst Image, dstX, dstY, srcX, srcY, srcWidth, srcHeight, angle int) {
+    C.gdImageCopyRotated(dst.img, p.img, C.double(dstX), C.double(dstY), C.int(srcX), C.int(srcY),
+        C.int(srcWidth), C.int(srcHeight), C.int(angle))
 }
 
 func (p *Image) ColorAllocate(r, g, b int) Color {
@@ -184,12 +261,42 @@ func (p *Image) FilledRectangle(x1, y1, x2, y2 int, color Color) {
     C.gdImageFilledRectangle(p.img, C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.int(color))
 }
 
+func (p *Image) SaveAlpha(saveflag bool) {
+    C.gdImageSaveAlpha(p.img, map[bool]C.int{true: 1, false: 0}[saveflag])
+}
 
+func (p *Image) AlphaBlending(blendmode bool) {
+    C.gdImageAlphaBlending(p.img, map[bool]C.int{true: 1, false: 0}[blendmode])
+}
 
+func (p *Image) Interlace(interlacemode bool) {
+    C.gdImageInterlace(p.img, map[bool]C.int{true: 1, false: 0}[interlacemode])
+}
 
+func (p *Image) SetThickness(thickness int) {
+    C.gdImageSetThickness(p.img, C.int(thickness))
+}
 
+func (p *Image) TrueColorToPalette(ditherFlag bool, colorsWanted int) {
+    C.gdImageTrueColorToPalette(p.img, map[bool]C.int{true: 1, false: 0}[ditherFlag], C.int(colorsWanted))
+}
 
+func (p *Image) SetStyle(style... Color) {
+    C.gdImageSetStyle(p.img, (*C.int)(Pointer(&style)), C.int(len(style)))
+}
 
+func (p *Image) SetAntiAliased(c Color) {
+     C.gdImageSetAntiAliased(p.img, C.int(c))
+}
 
+func (p *Image) SetAntiAliasedDontBlend(c Color, dont_blend bool) {
+    C.gdImageSetAntiAliasedDontBlend(p.img, C.int(c), map[bool]C.int{true: 1, false: 0}[dont_blend])
+}
 
+func (p *Image) SetTile(tile Image) {
+    C.gdImageSetTile(p.img, tile.img)
+}
 
+func (p *Image) SetBrush(brush Image) {
+    C.gdImageSetBrush(p.img, brush.img)
+}
