@@ -398,6 +398,24 @@ func (p *Image) FilledPolygon(points [](struct{x, y int}), c Color) {
     C.gdImageFilledPolygon(p.img, (C.gdPointPtr)(Pointer(&points)), C.int(len(points)), C.int(c))
 }
 
+func (p *Image) ColorsForIndex(index Color) map[string]int {
+    if p.TrueColor() {
+        return map[string]int{
+            "red":  (int(index) & 0x7F000000) >> 24,
+            "green":(int(index) & 0xFF0000) >> 16,
+            "blue": (int(index) & 0x00FF00) >> 8,
+            "alpha":(int(index) & 0x0000FF),
+        }
+    }
+
+    return map[string]int{
+        "red":      (int)((*p.img).red[index]),
+        "green":    (int)((*p.img).green[index]),
+        "blue":     (int)((*p.img).blue[index]),
+        "alpha":    (int)((*p.img).alpha[index]),
+    }
+}
+
 func searchfonts(dir string) (out []string){
     files, e := ioutil.ReadDir(dir)
     if e == nil {
