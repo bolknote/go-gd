@@ -9,7 +9,6 @@ package gd
 import "C"
 import "os"
 import . "unsafe"
-//import "utf16"
 
 type Image struct {img C.gdImagePtr}
 type Font  struct {fnt C.gdFontPtr}
