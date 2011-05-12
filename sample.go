@@ -10,6 +10,7 @@ func main() {
     font := gd.GetFont(gd.FONTGIANT)
 
     pict.Char(font, 100, 100, "B", color)
+    pict.String(font, 100, 120, "bolknote.ru", color)
 
     pict.Jpeg("out.jpg", 95)
 }

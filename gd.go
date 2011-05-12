@@ -9,6 +9,7 @@ package gd
 import "C"
 import "os"
 import . "unsafe"
+//import "utf16"
 
 type Image struct {img C.gdImagePtr}
 type Font  struct {fnt C.gdFontPtr}
@@ -360,3 +361,21 @@ func GetFont(size byte) *Font{
 func (p *Image) Char(font *Font, x, y int, c string, color Color) {
     C.gdImageChar(p.img, (*font).fnt, C.int(x), C.int(y), C.int(([]byte(c))[0]), C.int(color))
 }
+
+func (p *Image) CharUp(font *Font, x, y int, c string, color Color) {
+    C.gdImageCharUp(p.img, (*font).fnt, C.int(x), C.int(y), C.int(([]byte(c))[0]), C.int(color))
+}
+
+func (p *Image) String(font *Font, x, y int, s string, color Color) {
+    C.gdImageString(p.img, (*font).fnt, C.int(x), C.int(y), (*C.uchar)(Pointer(&s)), C.int(color))
+}
+
+func (p *Image) StringUp(font *Font, x, y int, s string, color Color) {
+    C.gdImageStringUp(p.img, (*font).fnt, C.int(x), C.int(y), (*C.uchar)(Pointer(&s)), C.int(color))
+}
+
+
+
+
+
+
