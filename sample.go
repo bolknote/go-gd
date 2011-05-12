@@ -3,8 +3,8 @@ package main
 import "gd"
 
 func main() {
-    pict := gd.CreateFromJpeg("IMG_1150.JPG1")
+    pict := gd.CreateFromJpeg("IMG_1150.JPG")
     defer pict.Destroy()
 
-    //pict.ImageJpeg("out.jpg", 95)
+    pict.Jpeg("out.jpg", 95)
 }
