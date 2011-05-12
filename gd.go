@@ -1,11 +1,17 @@
 package gd
 // #include <gd.h>
 // #include <gdfx.h>
+// #include <gdfontt.h>
+// #include <gdfonts.h>
+// #include <gdfontmb.h>
+// #include <gdfontl.h>
+// #include <gdfontg.h>
 import "C"
 import "os"
 import . "unsafe"
 
 type Image struct {img C.gdImagePtr}
+type Font  struct {fnt C.gdFontPtr}
 type Color int
 type Style int
 
@@ -14,6 +20,14 @@ const (
     ARCCHORD Style = 1 << iota
     ARCNOFILL
     ARCEDGED
+)
+
+const (
+    FONTTINY = iota
+    FONTSMALL
+    FONTMEDIUMBOLD
+    FONTLARGE
+    FONTGIANT
 )
 
 func Create(sx, sy int) *Image {
@@ -85,13 +99,14 @@ func (p *Image) SquareToCircle(radius int) *Image {
 
 func (p *Image) Jpeg(out string, quality int) {
     file := C.fopen(C.CString(out), C.CString("wb"))
+
     if file != nil {
         defer C.fclose(file)
 
         C.gdImageJpeg(p.img, file, C.int(quality))
+    } else {
+        panic(os.NewError("Error occurred while opening file for writing."))
     }
-
-    panic(os.NewError("Error occurred while opening file for writing."))
 }
 
 func (p *Image) Png(out string) {
@@ -101,9 +116,9 @@ func (p *Image) Png(out string) {
         defer C.fclose(file)
 
         C.gdImagePng(p.img, file)
+    } else {
+        panic(os.NewError("Error occurred while opening file for writing."))
     }
-
-    panic(os.NewError("Error occurred while opening file for writing."))
 }
 
 func (p *Image) Gif(out string) {
@@ -113,9 +128,9 @@ func (p *Image) Gif(out string) {
         defer C.fclose(file)
 
         C.gdImageGif(p.img, file)
+    } else {
+        panic(os.NewError("Error occurred while opening file for writing."))
     }
-
-    panic(os.NewError("Error occurred while opening file for writing."))
 }
 
 func (p *Image) Wbmp(out string, foreground Color) {
@@ -125,9 +140,9 @@ func (p *Image) Wbmp(out string, foreground Color) {
         defer C.fclose(file)
 
         C.gdImageWBMP(p.img, C.int(foreground), file)
+    } else {
+        panic(os.NewError("Error occurred while opening file for writing."))
     }
-
-    panic(os.NewError("Error occurred while opening file for writing."))
 }
 
 func (p *Image) ColorTransparent(color Color) {
@@ -325,3 +340,23 @@ func (p *Image) SetBrush(brush Image) {
     C.gdImageSetBrush(p.img, brush.img)
 }
 
+func GetFont(size byte) *Font{
+    switch size {
+    case FONTTINY:
+        return &Font{fnt: C.gdFontGetTiny()}
+    case FONTSMALL:
+        return &Font{fnt: C.gdFontGetSmall()}
+    case FONTMEDIUMBOLD:
+        return &Font{fnt: C.gdFontGetMediumBold()}
+    case FONTLARGE:
+        return &Font{fnt: C.gdFontGetLarge()}
+    case FONTGIANT:
+        return &Font{fnt: C.gdFontGetGiant()}
+    }
+
+    panic(os.NewError("Invalid font size"))
+}
+
+func (p *Image) Char(font *Font, x, y int, c string, color Color) {
+    C.gdImageChar(p.img, (*font).fnt, C.int(x), C.int(y), C.int(([]byte(c))[0]), C.int(color))
+}
