@@ -16,7 +16,7 @@ func main() {
     pict.String(font, 100, 120, "bolknote.ru", color)
 
     // Unicode font
-    fonts := gd.GetTtfFonts()
+    fonts := gd.GetFonts()
     fmt.Printf("Found %d X11 TTF font(s)\n", len(fonts))
 
     if l := len(fonts); l > 0 {

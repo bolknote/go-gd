@@ -398,16 +398,22 @@ func (p *Image) FilledPolygon(points [](struct{x, y int}), c Color) {
     C.gdImageFilledPolygon(p.img, (C.gdPointPtr)(Pointer(&points)), C.int(len(points)), C.int(c))
 }
 
-func searchttf(dir string) (out []string){
-    out, _ = filepath.Glob(filepath.Join(dir, "*.[tT][tT][fF]"))
-
+func searchfonts(dir string) (out []string){
     files, e := ioutil.ReadDir(dir)
     if e == nil {
         for _, file := range files {
-            if file.IsDirectory() {
+            switch {
+            case file.IsDirectory():
                 entry := filepath.Join(dir, file.Name)
 
-                out = append(out, searchttf(entry)...)
+                out = append(out, searchfonts(entry)...)
+
+            case file.IsRegular():
+                ext := filepath.Ext(file.Name)
+
+                if ext != "list" && ext != "dir" && ext != "scale" {
+                    out = append(out, file.Name)
+                }
             }
         }
     }
@@ -415,9 +421,9 @@ func searchttf(dir string) (out []string){
     return
 }
 
-func GetTtfFonts() (list []string) {
+func GetFonts() (list []string) {
     for _, dir := range strings.Split(C.DEFAULT_FONTPATH, C.PATHSEPARATOR, -1) {
-        list = append(list, searchttf(dir)...)
+        list = append(list, searchfonts(dir)...)
     }
 
     return
