@@ -627,3 +627,8 @@ func (p *Image) EdgeDetectQuick() {
     filter := [3][3]float32{{-1.0, 0.0, -1.0}, {0.0, 4.0, 0.0}, {-1.0, 0.0, -1.0}}
     p.Convolution(filter, 1, 127)
 }
+
+func (p *Image) Emboss() {
+    filter := [3][3]float32{{1.5, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, -1.5}}
+    p.Convolution(filter, 1, 127)
+}
