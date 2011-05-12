@@ -61,6 +61,18 @@ func CreateFromPng(infile string) *Image {
     panic(os.NewError("Error occurred while opening file."))
 }
 
+func CreateImageFromWbmp(infile string) *Image {
+    file := C.fopen(C.CString(infile), C.CString("rb"))
+
+    if file != nil {
+        defer C.fclose(file)
+
+        return &Image{img: gdImageCreateFromWBMP(file)}
+    }
+
+    panic(os.NewError("Error occurred while opening file."))
+}
+
 func (p *Image) Destroy() {
     if p != nil && p.img != nil {
         C.gdImageDestroy(p.img)
@@ -101,6 +113,18 @@ func (p *Image) Gif(out string) {
         defer C.fclose(file)
 
         C.gdImageGif(p.img, file)
+    }
+
+    panic(os.NewError("Error occurred while opening file for writing."))
+}
+
+func (p *Image) Wbmp(out string, foreground Color) {
+    file := C.fopen(C.CString(out), C.CString("wb"))
+
+    if file != nil {
+        defer C.fclose(file)
+
+        C.gdImageWBMP(p.img, C.int(foreground), file)
     }
 
     panic(os.NewError("Error occurred while opening file for writing."))
@@ -300,3 +324,4 @@ func (p *Image) SetTile(tile Image) {
 func (p *Image) SetBrush(brush Image) {
     C.gdImageSetBrush(p.img, brush.img)
 }
+
