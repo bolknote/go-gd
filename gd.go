@@ -5,6 +5,14 @@ import "os"
 
 type Image struct {img C.gdImagePtr}
 type Color int
+type Style int
+
+const (
+    ARCPIE Style = 0
+    ARCCHORD Style = 1 << iota
+    ARCNOFILL
+    ARCEDGED
+)
 
 func Create(sx, sy int) *Image {
     return &Image{img: C.gdImageCreate(C.int(sx), C.int(sy))}
@@ -90,6 +98,28 @@ func (p *Image) ColorResolveAlpha(r, g, b, a int) Color {
 
 func (p *Image) ColorDeallocate(color Color) {
     C.gdImageColorDeallocate(p.img, C.int(color))
+}
+
+func (p *Image) Fill(x, y int, c Color) {
+    C.gdImageFill(p.img, C.int(x), C.int(y), C.int(c))
+}
+
+func (p *Image) FilledArc(cx, cy, w, h, s, e, color Color, style Style) {
+    C.gdImageFilledArc(p.img, C.int(cx), C.int(cy), C.int(w), C.int(h), C.int(s),
+        C.int(e), C.int(color), C.int(style))
+}
+
+func (p *Image) Arc(cx, cy, w, h, s, e int, color Color) {
+    C.gdImageArc(p.img, C.int(cx), C.int(cy), C.int(w), C.int(h),
+        C.int(s), C.int(e), C.int(color))
+}
+
+func (p *Image) FilledEllipse(cx, cy, w, h, color Color) {
+    C.gdImageFilledEllipse(p.img, C.int(cx), C.int(cy), C.int(w), C.int(h), C.int(color))
+}
+
+func (p *Image) FillToBorder(x, y, border, color Color) {
+    C.gdImageFillToBorder(p.img, C.int(x), C.int(y), C.int(border), C.int(color))
 }
 
 
