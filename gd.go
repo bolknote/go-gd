@@ -528,6 +528,7 @@ func (p *Image) Brightness(brightness int) {
 
 func (p *Image) Contrast(contrast float64) {
     contrast = (100.0 - contrast) / 100.0
+    contrast *= contrast
 
     corr := func(c int, contrast float64) int {
         f := float64(c) / 255.0
