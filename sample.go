@@ -7,7 +7,7 @@ func main() {
     defer pict.Destroy()
 
     color := pict.ColorAllocate(0, 0, 0)
-    font := gd.GetFont(gd.FONTLARGE)
+    font := gd.GetFont(gd.FONTGIANT)
 
     pict.Char(font, 100, 100, "B", color)
 
