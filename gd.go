@@ -409,10 +409,14 @@ func searchfonts(dir string) (out []string){
                 out = append(out, searchfonts(entry)...)
 
             case file.IsRegular():
-                ext := filepath.Ext(file.Name)
+                ext := strings.ToLower(filepath.Ext(file.Name)[1:])
+                whitelist := []string{"ttf", "otf", "cid", "cff", "pcf", "fnt", "bdr", "pfr", "pfa", "pfb", "afm"}
 
-                if ext != "list" && ext != "dir" && ext != "scale" {
-                    out = append(out, file.Name)
+                for _, wext := range whitelist {
+                    if ext == wext {
+                        out = append(out, file.Name)
+                        break
+                    }
                 }
             }
         }
