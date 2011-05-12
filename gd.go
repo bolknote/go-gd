@@ -580,18 +580,19 @@ func (p *Image) Convolution(filter [3][3]float32, filter_div, offset float32) {
     }
 
     f := p.getpixelfunc()
-    pxl := map[string]int{"red": 0, "green": 0, "blue": 0, "alpha": 0}
+    alpha := 0
 
     for y := 0; y<sy; y++ {
         for x := 0; x<sx; x++ {
             newr, newg, newb := float32(0), float32(0), float32(0)
-            newa := af(srcback, pxl["alpha"])
+            newa := af(srcback, alpha)
 
             for j := 0; j<3; j++ {
                 yv := min(max(y - 1 + j, 0), sy - 1)
 
                 for i := 0; i<3; i++ {
-                    pxl = srcback.ColorsForIndex(f(srcback, min(max(x - 1 + i, 0), sx - 1), yv))
+                    pxl := srcback.ColorsForIndex(f(srcback, min(max(x - 1 + i, 0), sx - 1), yv))
+                    alpha = pxl["alpha"]
 
                     newr += float32(pxl["red"]) * filter[j][i]
                     newg += float32(pxl["green"]) * filter[j][i]
