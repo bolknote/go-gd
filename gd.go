@@ -451,14 +451,16 @@ func GetFonts() (list []string) {
     return
 }
 
-func (p *Image) GrayScale() {
-    var f func(p *Image, x, y int) Color
-
+func (p *Image) getpixelfunc() (func(p *Image, x, y int) Color) {
     if p.TrueColor() {
-        f = func(p *Image, x, y int) Color { return p.GetTrueColorPixel(x,y) }
-    } else {
-        f = func(p *Image, x, y int) Color { return p.GetPixel(x,y) }
+        return func(p *Image, x, y int) Color { return p.GetTrueColorPixel(x,y) }
     }
+
+    return func(p *Image, x, y int) Color { return p.GetPixel(x,y) }
+}
+
+func (p *Image) GrayScale() {
+    f := p.getpixelfunc()
 
     sx, sy := p.Sx(), p.Sy()
     for y := 0; y<sy; y++ {
@@ -471,6 +473,28 @@ func (p *Image) GrayScale() {
             newpxl := p.ColorAllocateAlpha(c, c, c, rgba["alpha"])
             if newpxl == -1 {
                 newpxl = p.ColorClosestAlpha(c, c, c, rgba["alpha"])
+            }
+
+            p.SetPixel(x, y, newpxl)
+        }
+    }
+}
+
+func (p *Image) Negate() {
+    f := p.getpixelfunc()
+
+    sx, sy := p.Sx(), p.Sy()
+    for y := 0; y<sy; y++ {
+        for x := 0; x<sx; x++ {
+            rgba := p.ColorsForIndex(f(p, x, y))
+
+            r := 255 - rgba["red"]
+            g := 255 - rgba["green"]
+            b := 255 - rgba["blue"]
+
+            newpxl := p.ColorAllocateAlpha(r, g, b, rgba["alpha"])
+            if newpxl == -1 {
+                newpxl = p.ColorClosestAlpha(r, g, b, rgba["alpha"])
             }
 
             p.SetPixel(x, y, newpxl)
