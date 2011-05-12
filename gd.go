@@ -12,6 +12,7 @@ import "path/filepath"
 import "strings"
 import "io/ioutil"
 import . "unsafe"
+import "fmt"
 
 type Image struct {img C.gdImagePtr}
 type Font  struct {fnt C.gdFontPtr}
@@ -401,10 +402,10 @@ func (p *Image) FilledPolygon(points [](struct{x, y int}), c Color) {
 func (p *Image) ColorsForIndex(index Color) map[string]int {
     if p.TrueColor() {
         return map[string]int{
-            "red":  (int(index) & 0x7F000000) >> 24,
-            "green":(int(index) & 0xFF0000) >> 16,
-            "blue": (int(index) & 0x00FF00) >> 8,
-            "alpha":(int(index) & 0x0000FF),
+            "alpha":  (int(index) & 0x7F000000) >> 24,
+            "red":(int(index) & 0xFF0000) >> 16,
+            "green": (int(index) & 0x00FF00) >> 8,
+            "blue":(int(index) & 0x0000FF),
         }
     }
 
@@ -467,6 +468,8 @@ func (p *Image) GrayScale() {
             c := (int) (.299 * float64(rgba["red"]) +
                 .587 * float64(rgba["green"]) +
                 .114 * float64(rgba["blue"]))
+
+            fmt.Println(rgba)
 
             newpxl := p.ColorAllocateAlpha(c, c, c, rgba["alpha"])
             if newpxl == -1 {
