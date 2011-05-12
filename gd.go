@@ -496,8 +496,29 @@ func (p *Image) Negate() {
     })
 }
 
+func min(n1, n2 int) int {
+    if n1 < n2 {
+        return n1
+    }
+
+    return n2
+}
+
+func max(n1, n2 int) int {
+    if n1 > n2 {
+        return n1
+    }
+
+    return n2
+}
+
+
 func (p *Image) Brightness(brightness int) {
     p.filter(func(r, g, b, a int) (int, int, int, int) {
-        
+        r = min(255, max(r + brightness, 0))
+        g = min(255, max(g + brightness, 0))
+        b = min(255, max(b + brightness, 0))
+
+        return r, g, b, a
     })
 }
