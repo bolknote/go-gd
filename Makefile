@@ -12,10 +12,10 @@ CGO_CFLAGS=-I/usr/local/Cellar/gd/2.0.36RC1/include
 CGO_LDFLAGS+=-L/usr/local/Cellar/gd/2.0.36RC1/lib
 CGO_LDFLAGS=-lgd
 
-CLEANFILES+=img
+CLEANFILES+=sample
 
 include ${GOROOT}/src/Make.pkg
 
-s: install sample.go
+sample: install sample.go
 	$(GC) sample.go
 	$(LD) -o $@ sample.$O
