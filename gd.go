@@ -384,6 +384,14 @@ func (p *Image) StringFT(fg Color, fontname string, ptsize, angle, x, y int, str
     return
 }
 
+func (p *Image) Polygon(points [](struct{x, y int}), c Color) {
+    C.gdImagePolygon(p.img, (C.gdPointPtr)(Pointer(&points)), C.int(len(points)), C.int(c))
+}
 
+func (p *Image) OpenPolygon(points [](struct{x, y int}), c Color) {
+    C.gdImageOpenPolygon(p.img, (C.gdPointPtr)(Pointer(&points)), C.int(len(points)), C.int(c))
+}
 
-
+func (p *Image) FilledPolygon(points [](struct{x, y int}), c Color) {
+    C.gdImageFilledPolygon(p.img, (C.gdPointPtr)(Pointer(&points)), C.int(len(points)), C.int(c))
+}
