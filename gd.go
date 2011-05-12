@@ -139,6 +139,16 @@ func (p *Image) Sy() int {
     return (int)((*p.img).sy)
 }
 
+func (p *Image) GetInterlaced() bool {
+    return (int)((*p.img).interlace) != 0
+}
 
+func (p *Image) ColorsTotal() int {
+    return (int)((*p.img).colorsTotal)
+}
 
+func (p *Image) TrueColor() bool {
+    return (int)((*p.img).trueColor) != 0
+}
 
+func (p *Image) 
