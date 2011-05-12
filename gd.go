@@ -563,13 +563,13 @@ func (p *Image) Color(r, g, b, a int) {
 func (p *Image) Convolution(filter [3][3]float32, filter_div, offset float32) {
     sx, sy := p.Sx(), p.Sy()
     srcback := CreateTrueColor(sx, sy)
+    defer srcback.Destroy()
 
     srcback.SaveAlpha(true)
     newpxl := srcback.ColorAllocateAlpha(0, 0, 0, 127)
     srcback.Fill(0, 0, newpxl)
 
-    srcback.Copy(p, 0, 0, 0, 0, sx, sy)
-    defer srcback.Destroy()
+    p.Copy(srcback, 0, 0, 0, 0, sx, sy)
 
     var af func(p *Image, c int) int
 
@@ -580,32 +580,44 @@ func (p *Image) Convolution(filter [3][3]float32, filter_div, offset float32) {
     }
 
     f := p.getpixelfunc()
+    pxl := map[string]int{"red": 0, "green": 0, "blue": 0, "alpha": 0}
 
-    p.filter(func(r, g, b, a, x, y int) (int, int, int, int) {
-        var newr, newg, newb float32
-        newa := af(srcback, int(newpxl))
+    for y := 0; y<sy; y++ {
+        for x := 0; x<sx; x++ {
+            newr, newg, newb := float32(0), float32(0), float32(0)
+            newa := af(srcback, pxl["alpha"])
 
-        for j := 0; j<3; j++ {
-            yv := min(max(y - 1 + j, 0), sy - 1)
+            for j := 0; j<3; j++ {
+                yv := min(max(y - 1 + j, 0), sy - 1)
 
-            for i := 0; i<3; i++ {
-                pxl := srcback.ColorsForIndex(f(srcback, min(max(x - 1 + i, 0), sx - 1), yv))
+                for i := 0; i<3; i++ {
+                    pxl = srcback.ColorsForIndex(f(srcback, min(max(x - 1 + i, 0), sx - 1), yv))
 
-                newr += float32(pxl["red"]) * filter[j][i]
-                newg += float32(pxl["green"]) * filter[j][i]
-                newb += float32(pxl["blue"]) * filter[j][i]
+                    newr += float32(pxl["red"]) * filter[j][i]
+                    newg += float32(pxl["green"]) * filter[j][i]
+                    newb += float32(pxl["blue"]) * filter[j][i]
+                }
             }
+
+            newr = (newr / filter_div) + offset
+            newg = (newg / filter_div) + offset
+            newb = (newb / filter_div) + offset
+
+            r := min(255, max(0, int(newr)))
+            g := min(255, max(0, int(newg)))
+            b := min(255, max(0, int(newb)))
+
+            newpxl = p.ColorAllocateAlpha(r, g, b, newa)
+            if newpxl == -1 {
+                newpxl = p.ColorClosestAlpha(r, g, b, newa)
+            }
+
+            p.SetPixel(x, y, newpxl)
         }
-
-        newr = (newr / filter_div) + offset
-        newg = (newg / filter_div) + offset
-        newb = (newb / filter_div) + offset
-
-        r = min(255, max(0, int(newr)))
-        g = min(255, max(0, int(newg)))
-        b = min(255, max(0, int(newb)))
-
-        return r, g, b, newa
-    })
+    }
 }
 
+func (p *Image) GaussianBlur() {
+    filter := [3][3]float32{{1.0, 2.0, 3.0}, {2.0, 4.0, 2.0}, {1.0, 2.0, 1.0}}
+    p.Convolution(filter, 16, 0)
+}
