@@ -12,7 +12,6 @@ import "path/filepath"
 import "strings"
 import "io/ioutil"
 import . "unsafe"
-import "fmt"
 
 type Image struct {img C.gdImagePtr}
 type Font  struct {fnt C.gdFontPtr}
@@ -468,8 +467,6 @@ func (p *Image) GrayScale() {
             c := (int) (.299 * float64(rgba["red"]) +
                 .587 * float64(rgba["green"]) +
                 .114 * float64(rgba["blue"]))
-
-            fmt.Println(rgba)
 
             newpxl := p.ColorAllocateAlpha(c, c, c, rgba["alpha"])
             if newpxl == -1 {
