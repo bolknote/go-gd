@@ -1,5 +1,6 @@
 package gd
 // #include <gd.h>
+// #include <gdfx.h>
 import "C"
 import "os"
 
@@ -38,6 +39,10 @@ func (p *Image) Destroy() {
     if p != nil && p.img != nil {
         C.gdImageDestroy(p.img)
     }
+}
+
+func (p *Image) SquareToCircle(radius int) *Image {
+    return &Image{img: C.gdImageSquareToCircle(p.img, C.int(radius))}
 }
 
 func (p *Image) Jpeg(out string, quality int) {
@@ -122,7 +127,9 @@ func (p *Image) FillToBorder(x, y, border, color Color) {
     C.gdImageFillToBorder(p.img, C.int(x), C.int(y), C.int(border), C.int(color))
 }
 
-
+func (p *Image) Sharpen(pct int) {
+    C.gdImageSharpen(p.img, C.int(pct))
+}
 
 
 
