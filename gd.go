@@ -67,7 +67,7 @@ func CreateImageFromWbmp(infile string) *Image {
     if file != nil {
         defer C.fclose(file)
 
-        return &Image{img: gdImageCreateFromWBMP(file)}
+        return &Image{img: C.gdImageCreateFromWBMP(file)}
     }
 
     panic(os.NewError("Error occurred while opening file."))
