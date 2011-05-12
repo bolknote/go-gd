@@ -152,35 +152,35 @@ func (p *Image) ColorTransparent(color Color) {
     C.gdImageColorTransparent(p.img, C.int(color))
 }
 
-func (p *Image) PaletteCopy(dst Image) {
+func (p *Image) PaletteCopy(dst *Image) {
     C.gdImagePaletteCopy(dst.img, p.img)
 }
 
-func (p *Image) CopyResampled(dst Image, dstX, dstY, srcX, srcY, dstW, dstH, srcW, srcH int) {
+func (p *Image) CopyResampled(dst *Image, dstX, dstY, srcX, srcY, dstW, dstH, srcW, srcH int) {
     C.gdImageCopyResampled(dst.img, p.img, C.int(dstX), C.int(dstY), C.int(srcX), C.int(srcY),
         C.int(dstW), C.int(dstH), C.int(srcW), C.int(srcH))
 }
 
-func (p *Image) CopyResized(dst Image, dstX, dstY, srcX, srcY, dstW, dstH, srcW, srcH int) {
+func (p *Image) CopyResized(dst *Image, dstX, dstY, srcX, srcY, dstW, dstH, srcW, srcH int) {
     C.gdImageCopyResized(dst.img, p.img, C.int(dstX), C.int(dstY), C.int(srcX), C.int(srcY),
         C.int(dstW), C.int(dstH), C.int(srcW), C.int(srcH))
 }
 
-func (p *Image) CopyMerge(dst Image, dstX, dstY, srcX, srcY, w, h, pct int) {
+func (p *Image) CopyMerge(dst *Image, dstX, dstY, srcX, srcY, w, h, pct int) {
     C.gdImageCopyMerge(dst.img, p.img, C.int(dstX), C.int(dstY), C.int(srcX), C.int(srcY),
         C.int(w), C.int(h), C.int(pct))
 }
 
-func (p *Image) CopyMergeGray(dst Image, dstX, dstY, srcX, srcY, w, h, pct int) {
+func (p *Image) CopyMergeGray(dst *Image, dstX, dstY, srcX, srcY, w, h, pct int) {
     C.gdImageCopyMergeGray(dst.img, p.img, C.int(dstX), C.int(dstY), C.int(srcX), C.int(srcY),
         C.int(w), C.int(h), C.int(pct))
 }
 
-func (p *Image) Copy(dst Image, dstX, dstY, srcX, srcY, w, h int) {
+func (p *Image) Copy(dst *Image, dstX, dstY, srcX, srcY, w, h int) {
     C.gdImageCopy(dst.img, p.img, C.int(dstX), C.int(dstY), C.int(srcX), C.int(srcY), C.int(w), C.int(h))
 }
 
-func (p *Image) CopyRotated(dst Image, dstX, dstY, srcX, srcY, srcWidth, srcHeight, angle int) {
+func (p *Image) CopyRotated(dst *Image, dstX, dstY, srcX, srcY, srcWidth, srcHeight, angle int) {
     C.gdImageCopyRotated(dst.img, p.img, C.double(dstX), C.double(dstY), C.int(srcX), C.int(srcY),
         C.int(srcWidth), C.int(srcHeight), C.int(angle))
 }
@@ -558,4 +558,14 @@ func (p *Image) Color(r, g, b, a int) {
 
         return ri, gi, bi, ai
     })
+}
+
+func (p *Image) Convolution(filter [3][3]float, filter_div, offset float) {
+    srcback := CreateTrueColor(p.Sx(), p.Sy())
+
+    srcback.SaveAlpha(true)
+    newpxl := srcback.ColorAllocateAlpha(0, 0, 0, 127)
+    srcback.Fill(0, 0, newpxl)
+
+    srcback.Copy(p, 0, 0, 0, 0, p.Sx(), p.Sy())
 }
