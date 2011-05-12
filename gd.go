@@ -131,7 +131,13 @@ func (p *Image) Sharpen(pct int) {
     C.gdImageSharpen(p.img, C.int(pct))
 }
 
+func (p *Image) Sx() int {
+    return (int)((*p.img).sx)
+}
 
+func (p *Image) Sy() int {
+    return (int)((*p.img).sy)
+}
 
 
 
