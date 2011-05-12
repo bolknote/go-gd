@@ -11,6 +11,7 @@ func main() {
 
     pict.Char(font, 100, 100, "B", color)
     pict.String(font, 100, 120, "bolknote.ru", color)
+    pict.StringFT(color, "/Library/Fonts/Impact.ttf", 12, 0, 100, 150, "Hello! Привет!")
 
     pict.Jpeg("out.jpg", 95)
 }
