@@ -459,20 +459,18 @@ func (p *Image) getpixelfunc() (func(p *Image, x, y int) Color) {
     return func(p *Image, x, y int) Color { return p.GetPixel(x,y) }
 }
 
-func (p *Image) GrayScale() {
+func (p *Image) filter(flt func(r, g, b, a int) (int, int, int, int)) {
     f := p.getpixelfunc()
 
     sx, sy := p.Sx(), p.Sy()
     for y := 0; y<sy; y++ {
         for x := 0; x<sx; x++ {
             rgba := p.ColorsForIndex(f(p, x, y))
-            c := (int) (.299 * float64(rgba["red"]) +
-                .587 * float64(rgba["green"]) +
-                .114 * float64(rgba["blue"]))
+            r, g, b, a := flt(rgba["red"], rgba["green"], rgba["blue"], rgba["alpha"])
 
-            newpxl := p.ColorAllocateAlpha(c, c, c, rgba["alpha"])
+            newpxl := p.ColorAllocateAlpha(r, g, b, a)
             if newpxl == -1 {
-                newpxl = p.ColorClosestAlpha(c, c, c, rgba["alpha"])
+                newpxl = p.ColorClosestAlpha(r, g, b, a)
             }
 
             p.SetPixel(x, y, newpxl)
@@ -480,24 +478,26 @@ func (p *Image) GrayScale() {
     }
 }
 
+func (p *Image) GrayScale() {
+    p.filter(func(r, g, b, a int) (int, int, int, int) {
+        c := (int) (.299 * float64(r) + .587 * float64(g) + .114 * float64(b))
+
+        return c, c, c, a
+    })
+}
+
 func (p *Image) Negate() {
-    f := p.getpixelfunc()
+    p.filter(func(r, g, b, a int) (int, int, int, int) {
+        r = 255 - r
+        g = 255 - g
+        b = 255 - b
 
-    sx, sy := p.Sx(), p.Sy()
-    for y := 0; y<sy; y++ {
-        for x := 0; x<sx; x++ {
-            rgba := p.ColorsForIndex(f(p, x, y))
+        return r, g, b, a
+    })
+}
 
-            r := 255 - rgba["red"]
-            g := 255 - rgba["green"]
-            b := 255 - rgba["blue"]
-
-            newpxl := p.ColorAllocateAlpha(r, g, b, rgba["alpha"])
-            if newpxl == -1 {
-                newpxl = p.ColorClosestAlpha(r, g, b, rgba["alpha"])
-            }
-
-            p.SetPixel(x, y, newpxl)
-        }
-    }
+func (p *Image) Brightness(brightness int) {
+    p.filter(func(r, g, b, a int) (int, int, int, int) {
+        
+    })
 }
