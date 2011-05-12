@@ -2,6 +2,7 @@ package gd
 // #include <gd.h>
 // #include <gdfx.h>
 import "C"
+import . "unsafe"
 import "os"
 
 type Image struct {img C.gdImagePtr}
@@ -151,4 +152,44 @@ func (p *Image) TrueColor() bool {
     return (int)((*p.img).trueColor) != 0
 }
 
-func (p *Image) 
+func (p *Image) SetPixel(x, y int, color Color) {
+    C.gdImageSetPixel(p.img, C.int(x), C.int(y), C.int(color))
+}
+
+func (p *Image) GetPixel(x, y int) Color {
+    return (Color)(C.gdImageGetPixel(p.img, C.int(x), C.int(y)))
+}
+
+func (p *Image) GetTrueColorPixel(x, y int) Color {
+    return (Color)(C.gdImageGetTrueColorPixel(p.img, C.int(x), C.int(y)))
+}
+
+func (p *Image) AABlend() {
+    C.gdImageAABlend(p.img)
+}
+
+func (p *Image) Line(x1, y1, x2, y2 int, color Color) {
+    C.gdImageLine(p.img, C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.int(color))
+}
+
+func (p *Image) DashedLine(x1, y1, x2, y2 int, color Color) {
+    C.gdImageDashedLine(p.img, C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.int(color))
+}
+
+func (p *Image) Rectangle(x1, y1, x2, y2 int, color Color) {
+    C.gdImageRectangle(p.img, C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.int(color))
+}
+
+func (p *Image) FilledRectangle(x1, y1, x2, y2 int, color Color) {
+    C.gdImageFilledRectangle(p.img, C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.int(color))
+}
+
+
+
+
+
+
+
+
+
+
