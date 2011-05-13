@@ -1,4 +1,6 @@
-    package gd
+package gd
+// Evgeny Stepanischev. 2011. http://bolknote.ru/ imbolk@gmail.com
+
 // #include <gd.h>
 // #include <gdfx.h>
 // #include <gdfontt.h>
