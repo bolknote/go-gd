@@ -90,6 +90,28 @@ func CreateImageFromWbmp(infile string) *Image {
     panic(os.NewError("Error occurred while opening file."))
 }
 
+func CreateImageFromXbm(infile string) *Image {
+    file := C.fopen(C.CString(infile), C.CString("rb"))
+
+    if file != nil {
+        defer C.fclose(file)
+
+        return &Image{img: C.gdImageCreateFromXbm(file)}
+    }
+
+    panic(os.NewError("Error occurred while opening file."))
+}
+
+func CreateImageFromXpm(infile string) (im *Image) {
+    defer func() {
+        if e := recover(); e != nil {
+            panic(os.NewError("Error occurred while opening file."))
+        }
+    }()
+
+    return &Image{img: C.gdImageCreateFromXpm(C.CString(infile))}
+}
+
 func (p *Image) Destroy() {
     if p != nil && p.img != nil {
         C.gdImageDestroy(p.img)
