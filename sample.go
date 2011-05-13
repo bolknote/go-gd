@@ -39,5 +39,6 @@ func main() {
         pict.StringFT(black, fonts[l-1], 12, 0, 100, 150, "Hello! Привет!")
     }
 
+    // http://www.php.net/Imagejpeg
     pict.Jpeg("out.jpg", 95)
 }
