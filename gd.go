@@ -267,7 +267,7 @@ func (p *Image) FilledEllipse(cx, cy, w, h int, color Color) {
     C.gdImageFilledEllipse(p.img, C.int(cx), C.int(cy), C.int(w), C.int(h), C.int(color))
 }
 
-/* NB: unabled to import gdImageEllipse. Something wrong in CGO I think:
+/* NB: unable to import gdImageEllipse. Something wrong in CGO I think:
 
 Undefined symbols:
   "_gdImageEllipse", referenced from:
@@ -617,19 +617,16 @@ func (p *Image) Convolution(filter [3][3]float32, filter_div, offset float32) {
     }
 
     f := p.getpixelfunc()
-    alpha := 0
 
     for y := 0; y<sy; y++ {
         for x := 0; x<sx; x++ {
             newr, newg, newb := float32(0), float32(0), float32(0)
-            newa := af(srcback, alpha)
 
             for j := 0; j<3; j++ {
                 yv := min(max(y - 1 + j, 0), sy - 1)
 
                 for i := 0; i<3; i++ {
                     pxl := srcback.ColorsForIndex(f(srcback, min(max(x - 1 + i, 0), sx - 1), yv))
-                    alpha = pxl["alpha"]
 
                     newr += float32(pxl["red"]) * filter[j][i]
                     newg += float32(pxl["green"]) * filter[j][i]
@@ -644,6 +641,8 @@ func (p *Image) Convolution(filter [3][3]float32, filter_div, offset float32) {
             r := min(255, max(0, int(newr)))
             g := min(255, max(0, int(newg)))
             b := min(255, max(0, int(newb)))
+
+            newa := af(srcback, int(f(srcback, x, y)))
 
             newpxl = p.ColorAllocateAlpha(r, g, b, newa)
             if newpxl == -1 {
