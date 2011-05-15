@@ -12,6 +12,7 @@ func main() {
 
     pict.Sharpen(10)
     pict.Brightness(50)
+    pict.SelectiveBlur()
 
     // http://www.php.net/manual/en/function.imagecolorallocate.php
     black := pict.ColorAllocate(0, 0, 0)
