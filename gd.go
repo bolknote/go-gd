@@ -13,9 +13,8 @@ import "os"
 import "path/filepath"
 import "strings"
 import "io/ioutil"
-import "math"
 import . "unsafe"
-import "fmt"
+//import "fmt"
 
 type Image struct {img C.gdImagePtr}
 type Font  struct {fnt C.gdFontPtr}
@@ -671,6 +670,17 @@ func (p *Image) Emboss() {
     p.Convolution(filter, 1, 127)
 }
 
+func (p *Image) MeanRemoval() {
+    filter := [3][3]float32{{-1, -1, -1}, {-1, 9, -1}, {-1, -1, -1}}
+    p.Convolution(filter, 1, 0)
+}
+
+func (p *Image) Smooth(weight float32) {
+    filter := [3][3]float32{{1, 1, 1}, {1, weight, 1}, {1, 1, 1}}
+    p.Convolution(filter, weight + 8, 0)
+}
+
+
 func (p *Image) SelectiveBlur() {
     sx, sy := p.Sx(), p.Sy()
     srcback := CreateTrueColor(sx, sy)
@@ -678,20 +688,20 @@ func (p *Image) SelectiveBlur() {
 
     p.Copy(srcback, 0, 0, 0, 0, sx, sy)
 
-    flt_r := [3][3]float64{{0,0,0}, {0,0,0}, {0,0,0}}
-    flt_g := [3][3]float64{{0,0,0}, {0,0,0}, {0,0,0}}
-    flt_b := [3][3]float64{{0,0,0}, {0,0,0}, {0,0,0}}
+    flt_r := [3][3]float32{{0,0,0}, {0,0,0}, {0,0,0}}
+    flt_g := [3][3]float32{{0,0,0}, {0,0,0}, {0,0,0}}
+    flt_b := [3][3]float32{{0,0,0}, {0,0,0}, {0,0,0}}
 
     var (
-        new_r, new_g, new_b float64
+        new_r, new_g, new_b float32
         new_a int
     )
 
     for y := 0; y<sy; y++ {
         for x := 0; x<sx; x++ {
-            flt_r_sum := float64(0)
-            flt_g_sum := float64(0)
-            flt_b_sum := float64(0)
+            flt_r_sum := float32(0)
+            flt_g_sum := float32(0)
+            flt_b_sum := float32(0)
 
             cpxl := p.ColorsForIndex(p.GetPixel(x, y))
 
@@ -700,10 +710,10 @@ func (p *Image) SelectiveBlur() {
                     if j == 1 && i == 1 {
                         flt_r[1][1], flt_g[1][1], flt_b[1][1] = 0.5, 0.5, 0.5
                     } else {
-                        pxl := p.ColorsForIndex(p.GetPixel(x - (3>>1)+i, y-(3>>1)+j))
+                        pxl := srcback.ColorsForIndex(p.GetPixel(x - (3>>1)+i, y-(3>>1)+j))
                         new_a = pxl["alpha"]
 
-                        new_r = math.Fabs(float64(cpxl["red"]) - float64(pxl["red"]))
+                        new_r = abs32(float32(cpxl["red"]) - float32(pxl["red"]))
 
                         if new_r != 0 {
                             flt_r[j][i] = 1.0/new_r
@@ -711,15 +721,15 @@ func (p *Image) SelectiveBlur() {
                             flt_r[j][i] = 1.0
                         }
 
-                        new_g = math.Fabs(float64(cpxl["green"]) - float64(pxl["green"]))
+                        new_g = abs32(float32(cpxl["green"]) - float32(pxl["green"]))
 
                         if new_g != 0 {
                             flt_g[j][i] = 1.0/new_g
                         } else {
-                            flt_r[j][i] = 1.0
+                            flt_g[j][i] = 1.0
                         }
 
-                        new_b = math.Fabs(float64(cpxl["blue"]) - float64(pxl["blue"]))
+                        new_b = abs32(float32(cpxl["blue"]) - float32(pxl["blue"]))
 
                         if new_b != 0 {
                             flt_b[j][i] = 1.0/new_b
@@ -754,10 +764,10 @@ func (p *Image) SelectiveBlur() {
 
             for j := 0; j<3; j++ {
                 for i := 0; i<3; i++ {
-                    pxl := p.ColorsForIndex(p.GetPixel(x - (3>>1) + i, y - (3>>1) + j))
-                    new_r += float64(pxl["red"]) * flt_r[j][i]
-                    new_g += float64(pxl["green"]) * flt_g[j][i]
-                    new_b += float64(pxl["blue"]) * flt_b[j][i]
+                    pxl := srcback.ColorsForIndex(p.GetPixel(x - (3>>1) + i, y - (3>>1) + j))
+                    new_r += float32(pxl["red"]) * flt_r[j][i]
+                    new_g += float32(pxl["green"]) * flt_g[j][i]
+                    new_b += float32(pxl["blue"]) * flt_b[j][i]
                 }
             }
 
@@ -773,4 +783,12 @@ func (p *Image) SelectiveBlur() {
             p.SetPixel(x, y, new_pxl)
         }
     }
+}
+
+func abs32(f float32) float32 {
+    if f < 0 {
+        return -f
+    }
+
+    return f
 }
