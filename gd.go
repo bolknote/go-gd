@@ -681,7 +681,7 @@ func (p *Image) Smooth(weight float32) {
 }
 
 
-func (p *Image) SelectiveBlur() {
+/*func (p *Image) SelectiveBlur() {
     sx, sy := p.Sx(), p.Sy()
     srcback := CreateTrueColor(sx, sy)
     defer srcback.Destroy()
@@ -694,8 +694,9 @@ func (p *Image) SelectiveBlur() {
 
     var (
         new_r, new_g, new_b float32
-        new_a int
     )
+
+    f := p.getpixelfunc()
 
     for y := 0; y<sy; y++ {
         for x := 0; x<sx; x++ {
@@ -703,15 +704,14 @@ func (p *Image) SelectiveBlur() {
             flt_g_sum := float32(0)
             flt_b_sum := float32(0)
 
-            cpxl := p.ColorsForIndex(p.GetPixel(x, y))
+            cpxl := p.ColorsForIndex(f(p, x, y))
 
             for j := 0; j<3; j++ {
                 for i := 0; i<3; i++ {
                     if j == 1 && i == 1 {
                         flt_r[1][1], flt_g[1][1], flt_b[1][1] = 0.5, 0.5, 0.5
                     } else {
-                        pxl := srcback.ColorsForIndex(p.GetPixel(x - (3>>1)+i, y-(3>>1)+j))
-                        new_a = pxl["alpha"]
+                        pxl := srcback.ColorsForIndex(f(p, x - (3>>1)+i, y-(3>>1)+j))
 
                         new_r = abs32(float32(cpxl["red"]) - float32(pxl["red"]))
 
@@ -764,7 +764,7 @@ func (p *Image) SelectiveBlur() {
 
             for j := 0; j<3; j++ {
                 for i := 0; i<3; i++ {
-                    pxl := srcback.ColorsForIndex(p.GetPixel(x - (3>>1) + i, y - (3>>1) + j))
+                    pxl := srcback.ColorsForIndex(f(p, x - (3>>1) + i, y - (3>>1) + j))
                     new_r += float32(pxl["red"]) * flt_r[j][i]
                     new_g += float32(pxl["green"]) * flt_g[j][i]
                     new_b += float32(pxl["blue"]) * flt_b[j][i]
@@ -774,6 +774,8 @@ func (p *Image) SelectiveBlur() {
             r := max(255, min(0, (int)(new_r)))
             g := max(255, min(0, (int)(new_g)))
             b := max(255, min(0, (int)(new_b)))
+
+            new_a := cpxl["alpha"]
 
             new_pxl := p.ColorAllocateAlpha(r, g, b, new_a)
             if new_pxl == -1 {
@@ -791,4 +793,4 @@ func abs32(f float32) float32 {
     }
 
     return f
-}
+}*/
