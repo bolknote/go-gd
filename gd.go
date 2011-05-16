@@ -680,3 +680,244 @@ func (p *Image) Smooth(weight float32) {
     p.Convolution(filter, weight + 8, 0)
 }
 
+// Stack Blur Algorithm by Mario Klingemann <mario@quasimondo.com>
+// Go port by Evgeny Stepanischev http://bolknote.ru
+func (img *Image) StackBlur(radius int64) {
+    if radius < 1 {
+        return
+    }
+
+    pix := (uintptr)(Pointer(*img.img.tpixels))
+
+    w, h := int64(img.Sx()), int64(img.Sy())
+    wm, hm, wh, div := w-1, h-1, w * h, radius * 2 + 1
+
+    r := make([]int64, wh)
+    g := make([]int64, wh)
+    b := make([]int64, wh)
+    vmin := make([]int64, max64(w, h))
+
+    var rsum, gsum, bsum, x, y, i, p, yp, yi, yw int64
+    divsum := (div + 1) >> 1
+    divsum *= divsum
+
+    dv := make([]int64, 256 * divsum)
+
+    for i = 0; i<256 * divsum; i++ {
+        dv[i] = i / divsum
+    }
+
+    yw, yi = 0, 0
+    var stack [][3]int64
+    for i = 0; i<div; i++ {
+        stack = append(stack, [3]int64{0, 0, 0})
+    }
+
+    var stackpointer, stackstart, rbs, routsum, goutsum, boutsum int64
+    var rinsum, ginsum, binsum int64
+    var sir [3]int64
+
+    r1 := radius + 1
+
+    for y = 0; y<h; y++ {
+        rinsum, ginsum, binsum, routsum, goutsum, boutsum, rsum, gsum, bsum = 0, 0, 0, 0, 0, 0, 0, 0, 0
+
+        for i = -radius; i<=radius; i++ {
+            p = *(*int64)(Pointer(pix + uintptr(yi + min64(wm, max64(i, 0)))))
+
+            sir = stack[i + radius]
+            sir[0] = (p & 0xff0000)>>16
+            sir[1] = (p & 0x00ff00)>>8
+            sir[2] = (p & 0x0000ff)
+
+            rbs = r1 - abs(i)
+            rsum += sir[0] * rbs
+            gsum += sir[1] * rbs
+            bsum += sir[2] * rbs
+
+            if i > 0 {
+                rinsum += sir[0]
+                ginsum += sir[1]
+                binsum += sir[2]
+            } else {
+                routsum += sir[0]
+                goutsum += sir[1]
+                boutsum += sir[2]
+            }
+        }
+
+        stackpointer = radius
+
+        for x = 0; x<w; x++ {
+            r[yi] = dv[rsum]
+            g[yi] = dv[gsum]
+            b[yi] = dv[bsum]
+
+            rsum -= routsum
+            gsum -= goutsum
+            bsum -= boutsum
+
+            stackstart = stackpointer - radius + div
+            sir = stack[stackstart % div]
+
+            routsum -= sir[0]
+            goutsum -= sir[1]
+            boutsum -= sir[2]
+
+            if y == 0 {
+                vmin[x] = min64(x + radius + 1, wm)
+            }
+
+            p = *(*int64)(Pointer(pix+uintptr(yw + vmin[x])))
+
+            sir[0] = (p & 0xff0000)>>16
+            sir[1] = (p & 0x00ff00)>>8
+            sir[2] = (p & 0x0000ff)
+
+            rinsum += sir[0]
+            ginsum += sir[1]
+            binsum += sir[2]
+
+            rsum += rinsum
+            gsum += ginsum
+            bsum += binsum
+
+            stackpointer = (stackpointer + 1) % div
+            sir = stack[stackpointer % div]
+
+            routsum += sir[0]
+            goutsum += sir[1]
+            boutsum += sir[2]
+
+            rinsum -= sir[0]
+            ginsum -= sir[1]
+            binsum -= sir[2]
+
+            yi++
+        }
+
+        yw += w
+    }
+
+    for x = 0; x<w; x++ {
+        rinsum, ginsum, binsum, routsum, goutsum, boutsum, rsum, gsum, bsum = 0, 0, 0, 0, 0, 0, 0, 0, 0
+
+        yp = -radius * w
+
+        for i = -radius; i <= radius; i++ {
+            yi = max64(0, yp) + x
+
+            sir = stack[i + radius]
+
+            sir[0] = r[yi]
+            sir[1] = g[yi]
+            sir[2] = b[yi]
+
+            rbs = r1 - abs(i)
+
+            rsum += r[yi] * rbs
+            gsum += g[yi] * rbs
+            bsum += b[yi] * rbs
+
+            if i > 0 {
+                rinsum += sir[0]
+                ginsum += sir[1]
+                binsum += sir[2]
+            } else {
+                routsum += sir[0]
+                goutsum += sir[1]
+                boutsum += sir[2]
+            }
+
+            if i < hm {
+                yp += w
+            }
+        }
+
+        yi = x
+
+        stackpointer = radius
+
+        for y = 0; y < h; y++ {
+            *(*int64)(Pointer(pix+uintptr(yi))) = 0xff000000 | (dv[rsum]<<16) | (dv[gsum]<<8) | dv[bsum]
+
+            rsum -= routsum
+            gsum -= goutsum
+            bsum -= boutsum
+
+            stackstart = stackpointer - radius + div
+            sir = stack[stackstart % div]
+
+            routsum -= sir[0]
+            goutsum -= sir[1]
+            boutsum -= sir[2]
+
+            if x == 0 {
+                vmin[y] = min64(y + r1, hm) * w
+            }
+
+            p = x + vmin[y]
+
+            sir[0] = r[p]
+            sir[1] = g[p]
+            sir[2] = b[p]
+
+            rinsum += sir[0]
+            ginsum += sir[1]
+            binsum += sir[2]
+
+            rsum += rinsum
+            gsum += ginsum
+            bsum += binsum
+
+            stackpointer = (stackpointer + 1) % div
+            sir = stack[stackpointer]
+
+            routsum += sir[0]
+            goutsum += sir[1]
+            boutsum += sir[2]
+
+            rinsum -= sir[0]
+            ginsum -= sir[1]
+            binsum -= sir[2]
+
+            yi += w
+        }
+    }
+}
+
+func abs(i int64) int64 {
+    if i < 0 {
+        return -i
+    }
+
+    return i
+}
+
+func min64(x, y int64) int64 {
+    if x < y {
+        return x
+    }
+
+    return y
+}
+
+func max64(x, y int64) int64 {
+    if x > y {
+        return x
+    }
+
+    return y
+}
+
+
+
+
+
+
+
+
+
+
+
+
