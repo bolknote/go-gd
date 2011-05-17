@@ -682,67 +682,76 @@ func (p *Image) Smooth(weight float32) {
 
 // Stack Blur Algorithm by Mario Klingemann <mario@quasimondo.com>
 // Go port by Evgeny Stepanischev http://bolknote.ru
-func (img *Image) StackBlur(radius int64) {
+func (img *Image) StackBlur(radius int) {
     if radius < 1 {
         return
     }
 
-    pix := (uintptr)(Pointer(*img.img.tpixels))
+    pix := img.getpixelfunc()
 
-    w, h := int64(img.Sx()), int64(img.Sy())
+    w, h := int(img.Sx()), int(img.Sy())
     wm, hm, wh, div := w-1, h-1, w * h, radius * 2 + 1
 
-    r := make([]int64, wh)
-    g := make([]int64, wh)
-    b := make([]int64, wh)
-    vmin := make([]int64, max64(w, h))
+    r := make([]int, wh)
+    g := make([]int, wh)
+    b := make([]int, wh)
+    a := make([]int, wh)
+    vmin := make([]int, max(w, h))
 
-    var rsum, gsum, bsum, x, y, i, p, yp, yi, yw int64
+    var rsum, gsum, bsum, asum, x, y, i, yp, yi, yw int
     divsum := (div + 1) >> 1
     divsum *= divsum
 
-    dv := make([]int64, 256 * divsum)
+    dv := make([]int, 256 * divsum)
 
     for i = 0; i<256 * divsum; i++ {
         dv[i] = i / divsum
     }
 
     yw, yi = 0, 0
-    var stack [][3]int64
+    var stack [][4]int
     for i = 0; i<div; i++ {
-        stack = append(stack, [3]int64{0, 0, 0})
+        stack = append(stack, [4]int{0, 0, 0, 0})
     }
 
-    var stackpointer, stackstart, rbs, routsum, goutsum, boutsum int64
-    var rinsum, ginsum, binsum int64
-    var sir [3]int64
+    var stackpointer, stackstart, rbs, routsum, goutsum, boutsum, aoutsum int
+    var rinsum, ginsum, binsum, ainsum int
+    var sir *[4]int
 
     r1 := radius + 1
 
     for y = 0; y<h; y++ {
-        rinsum, ginsum, binsum, routsum, goutsum, boutsum, rsum, gsum, bsum = 0, 0, 0, 0, 0, 0, 0, 0, 0
+        rinsum, ginsum, binsum, ainsum, routsum, goutsum, boutsum, aoutsum, rsum, gsum, bsum, asum = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
         for i = -radius; i<=radius; i++ {
-            p = *(*int64)(Pointer(pix + uintptr(yi + min64(wm, max64(i, 0)))))
+            coords := yi + min(wm, max(i, 0))
+            yc := coords / w
+            xc := coords % w
 
-            sir = stack[i + radius]
-            sir[0] = (p & 0xff0000)>>16
-            sir[1] = (p & 0x00ff00)>>8
-            sir[2] = (p & 0x0000ff)
+            p := img.ColorsForIndex(pix(img, xc, yc))
+
+            sir = &stack[i + radius]
+            sir[0] = p["red"]
+            sir[1] = p["green"]
+            sir[2] = p["blue"]
+            sir[3] = p["alpha"]
 
             rbs = r1 - abs(i)
             rsum += sir[0] * rbs
             gsum += sir[1] * rbs
             bsum += sir[2] * rbs
+            asum += sir[3] * rbs
 
             if i > 0 {
                 rinsum += sir[0]
                 ginsum += sir[1]
                 binsum += sir[2]
+                ainsum += sir[3]
             } else {
                 routsum += sir[0]
                 goutsum += sir[1]
                 boutsum += sir[2]
+                aoutsum += sir[3]
             }
         }
 
@@ -752,46 +761,58 @@ func (img *Image) StackBlur(radius int64) {
             r[yi] = dv[rsum]
             g[yi] = dv[gsum]
             b[yi] = dv[bsum]
+            a[yi] = dv[asum]
 
             rsum -= routsum
             gsum -= goutsum
             bsum -= boutsum
+            asum -= aoutsum
 
             stackstart = stackpointer - radius + div
-            sir = stack[stackstart % div]
+            sir = &stack[stackstart % div]
 
             routsum -= sir[0]
             goutsum -= sir[1]
             boutsum -= sir[2]
+            aoutsum -= sir[3]
 
             if y == 0 {
-                vmin[x] = min64(x + radius + 1, wm)
+                vmin[x] = min(x + radius + 1, wm)
             }
 
-            p = *(*int64)(Pointer(pix+uintptr(yw + vmin[x])))
+            coords := yw + vmin[x]
+            yc := coords / w
+            xc := coords % w
 
-            sir[0] = (p & 0xff0000)>>16
-            sir[1] = (p & 0x00ff00)>>8
-            sir[2] = (p & 0x0000ff)
+            p := img.ColorsForIndex(pix(img, xc, yc))
+
+            sir[0] = p["red"]
+            sir[1] = p["green"]
+            sir[2] = p["blue"]
+            sir[3] = p["alpha"]
 
             rinsum += sir[0]
             ginsum += sir[1]
             binsum += sir[2]
+            ainsum += sir[3]
 
             rsum += rinsum
             gsum += ginsum
             bsum += binsum
+            asum += ainsum
 
             stackpointer = (stackpointer + 1) % div
-            sir = stack[stackpointer % div]
+            sir = &stack[stackpointer % div]
 
             routsum += sir[0]
             goutsum += sir[1]
             boutsum += sir[2]
+            aoutsum += sir[3]
 
             rinsum -= sir[0]
             ginsum -= sir[1]
             binsum -= sir[2]
+            ainsum -= sir[3]
 
             yi++
         }
@@ -800,33 +821,37 @@ func (img *Image) StackBlur(radius int64) {
     }
 
     for x = 0; x<w; x++ {
-        rinsum, ginsum, binsum, routsum, goutsum, boutsum, rsum, gsum, bsum = 0, 0, 0, 0, 0, 0, 0, 0, 0
+        rinsum, ginsum, binsum, ainsum, routsum, goutsum, boutsum, aoutsum, rsum, gsum, bsum, asum = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
         yp = -radius * w
 
         for i = -radius; i <= radius; i++ {
-            yi = max64(0, yp) + x
+            yi = max(0, yp) + x
 
-            sir = stack[i + radius]
+            sir = &stack[i + radius]
 
             sir[0] = r[yi]
             sir[1] = g[yi]
             sir[2] = b[yi]
+            sir[3] = a[yi]
 
             rbs = r1 - abs(i)
 
             rsum += r[yi] * rbs
             gsum += g[yi] * rbs
             bsum += b[yi] * rbs
+            asum += a[yi] * rbs
 
             if i > 0 {
                 rinsum += sir[0]
                 ginsum += sir[1]
                 binsum += sir[2]
+                ainsum += sir[3]
             } else {
                 routsum += sir[0]
                 goutsum += sir[1]
                 boutsum += sir[2]
+                aoutsum += sir[3]
             }
 
             if i < hm {
@@ -839,85 +864,70 @@ func (img *Image) StackBlur(radius int64) {
         stackpointer = radius
 
         for y = 0; y < h; y++ {
-            *(*int64)(Pointer(pix+uintptr(yi))) = 0xff000000 | (dv[rsum]<<16) | (dv[gsum]<<8) | dv[bsum]
+            newpxl := img.ColorAllocateAlpha(dv[rsum], dv[gsum], dv[bsum], dv[asum])
+            if newpxl == -1 {
+                newpxl = img.ColorClosestAlpha(dv[rsum], dv[gsum], dv[bsum], dv[asum])
+            }
+
+            img.SetPixel(yi % w, yi / w, newpxl)
 
             rsum -= routsum
             gsum -= goutsum
             bsum -= boutsum
+            asum -= aoutsum
 
             stackstart = stackpointer - radius + div
-            sir = stack[stackstart % div]
+            sir = &stack[stackstart % div]
 
             routsum -= sir[0]
             goutsum -= sir[1]
             boutsum -= sir[2]
+            aoutsum -= sir[3]
 
             if x == 0 {
-                vmin[y] = min64(y + r1, hm) * w
+                vmin[y] = min(y + r1, hm) * w
             }
 
-            p = x + vmin[y]
+            p := x + vmin[y]
 
             sir[0] = r[p]
             sir[1] = g[p]
             sir[2] = b[p]
+            sir[3] = a[p]
 
             rinsum += sir[0]
             ginsum += sir[1]
             binsum += sir[2]
+            ainsum += sir[3]
 
             rsum += rinsum
             gsum += ginsum
             bsum += binsum
+            asum += ainsum
 
             stackpointer = (stackpointer + 1) % div
-            sir = stack[stackpointer]
+            sir = &stack[stackpointer]
 
             routsum += sir[0]
             goutsum += sir[1]
             boutsum += sir[2]
+            aoutsum += sir[3]
 
             rinsum -= sir[0]
             ginsum -= sir[1]
             binsum -= sir[2]
+            ainsum -= sir[3]
 
             yi += w
         }
     }
 }
 
-func abs(i int64) int64 {
+func abs(i int) int {
     if i < 0 {
         return -i
     }
 
     return i
 }
-
-func min64(x, y int64) int64 {
-    if x < y {
-        return x
-    }
-
-    return y
-}
-
-func max64(x, y int64) int64 {
-    if x > y {
-        return x
-    }
-
-    return y
-}
-
-
-
-
-
-
-
-
-
-
-
 
