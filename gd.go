@@ -681,7 +681,7 @@ func (p *Image) Smooth(weight float32) {
 }
 
 // Stack Blur Algorithm by Mario Klingemann <mario@quasimondo.com>
-// Go port by Evgeny Stepanischev http://bolknote.ru
+// "Go" language port by Evgeny Stepanischev http://bolknote.ru
 func (img *Image) StackBlur(radius int) {
     if radius < 1 {
         return
