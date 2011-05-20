@@ -710,8 +710,9 @@ func (img *Image) StackBlur(radius int) {
 
     yw, yi = 0, 0
     var stack [][4]byte
-    for i = 0; i<div; i++ {
-        stack = append(stack, [4]byte{0, 0, 0, 0})
+    {
+        s := make([]byte, div, div * 4)
+        stack = *(*[][4]byte)(Pointer(&s))
     }
 
     var stackpointer, stackstart, rbs, routsum, goutsum, boutsum, aoutsum int
