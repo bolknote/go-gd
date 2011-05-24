@@ -692,10 +692,7 @@ func (img *Image) StackBlur(radius int, keepalpha bool) {
     w, h := int(img.Sx()), int(img.Sy())
     wm, hm, wh, div := w-1, h-1, w * h, radius * 2 + 1
 
-    len := 4
-    if keepalpha {
-        len = 3
-    }
+    len := map[bool]int{true: 3, false: 4}[keepalpha]
 
     rgba := make([][]byte, len)
     for i := 0; i<len; i++ {
