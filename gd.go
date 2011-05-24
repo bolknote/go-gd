@@ -682,7 +682,7 @@ func (p *Image) Smooth(weight float32) {
 
 // Stack Blur Algorithm by Mario Klingemann <mario@quasimondo.com>
 // "Go" language port by Evgeny Stepanischev http://bolknote.ru
-func (img *Image) StackBlur(radius int) {
+func (img *Image) StackBlur(radius int, keepalpha bool) {
     if radius < 1 {
         return
     }
@@ -692,13 +692,21 @@ func (img *Image) StackBlur(radius int) {
     w, h := int(img.Sx()), int(img.Sy())
     wm, hm, wh, div := w-1, h-1, w * h, radius * 2 + 1
 
-    r := make([]byte, wh)
-    g := make([]byte, wh)
-    b := make([]byte, wh)
-    a := make([]byte, wh)
+    len := 4
+    if keepalpha {
+        len = 3
+    }
+
+    rgba := make([][]byte, len)
+    for i := 0; i<len; i++ {
+        rgba[i] = make([]byte, wh)
+    }
+
     vmin := make([]int, max(w, h))
 
-    var rsum, gsum, bsum, asum, x, y, i, yp, yi, yw int
+    var x, y, i, yp, yi, yw, stackpointer, stackstart, rbs int
+    var sir *[4]byte
+
     divsum := (div + 1) >> 1
     divsum *= divsum
 
@@ -710,15 +718,12 @@ func (img *Image) StackBlur(radius int) {
 
     yw, yi = 0, 0
     stack := make([][4]byte, div)
-
-    var stackpointer, stackstart, rbs, routsum, goutsum, boutsum, aoutsum int
-    var rinsum, ginsum, binsum, ainsum int
-    var sir *[4]byte
-
     r1 := radius + 1
 
     for y = 0; y<h; y++ {
-        rinsum, ginsum, binsum, ainsum, routsum, goutsum, boutsum, aoutsum, rsum, gsum, bsum, asum = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        sum    := make([]int, len)
+        insum  := make([]int, len)
+        outsum := make([]int, len)
 
         for i = -radius; i<=radius; i++ {
             coords := yi + min(wm, max(i, 0))
@@ -734,44 +739,35 @@ func (img *Image) StackBlur(radius int) {
             sir[3] = (byte)(p["alpha"])
 
             rbs = r1 - abs(i)
-            rsum += int(sir[0]) * rbs
-            gsum += int(sir[1]) * rbs
-            bsum += int(sir[2]) * rbs
-            asum += int(sir[3]) * rbs
+            for i := 0; i<len; i++ {
+                sum[i] += int(sir[i]) * rbs
+            }
 
             if i > 0 {
-                rinsum += int(sir[0])
-                ginsum += int(sir[1])
-                binsum += int(sir[2])
-                ainsum += int(sir[3])
+                for i := 0; i<len; i++ {
+                    insum[i] += int(sir[i])
+                }
             } else {
-                routsum += int(sir[0])
-                goutsum += int(sir[1])
-                boutsum += int(sir[2])
-                aoutsum += int(sir[3])
+                for i := 0; i<len; i++ {
+                    outsum[i] += int(sir[i])
+                }
             }
         }
 
         stackpointer = radius
 
         for x = 0; x<w; x++ {
-            r[yi] = dv[rsum]
-            g[yi] = dv[gsum]
-            b[yi] = dv[bsum]
-            a[yi] = dv[asum]
-
-            rsum -= routsum
-            gsum -= goutsum
-            bsum -= boutsum
-            asum -= aoutsum
+            for i := 0; i<len; i++ {
+                rgba[i][yi] = dv[sum[i]]
+                sum[i] -= outsum[i]
+            }
 
             stackstart = stackpointer - radius + div
             sir = &stack[stackstart % div]
 
-            routsum -= int(sir[0])
-            goutsum -= int(sir[1])
-            boutsum -= int(sir[2])
-            aoutsum -= int(sir[3])
+            for i := 0; i<len; i++ {
+                outsum[i] -= int(sir[i])
+            }
 
             if y == 0 {
                 vmin[x] = min(x + radius + 1, wm)
@@ -788,28 +784,18 @@ func (img *Image) StackBlur(radius int) {
             sir[2] = byte(p["blue"])
             sir[3] = byte(p["alpha"])
 
-            rinsum += int(sir[0])
-            ginsum += int(sir[1])
-            binsum += int(sir[2])
-            ainsum += int(sir[3])
-
-            rsum += rinsum
-            gsum += ginsum
-            bsum += binsum
-            asum += ainsum
+            for i := 0; i<len; i++ {
+                insum[i] += int(sir[i])
+                sum[i] += insum[i]
+            }
 
             stackpointer = (stackpointer + 1) % div
             sir = &stack[stackpointer % div]
 
-            routsum += int(sir[0])
-            goutsum += int(sir[1])
-            boutsum += int(sir[2])
-            aoutsum += int(sir[3])
-
-            rinsum -= int(sir[0])
-            ginsum -= int(sir[1])
-            binsum -= int(sir[2])
-            ainsum -= int(sir[3])
+            for i := 0; i<len; i++ {
+                outsum[i] += int(sir[i])
+                insum[i] -= int(sir[i])
+            }
 
             yi++
         }
@@ -818,7 +804,9 @@ func (img *Image) StackBlur(radius int) {
     }
 
     for x = 0; x<w; x++ {
-        rinsum, ginsum, binsum, ainsum, routsum, goutsum, boutsum, aoutsum, rsum, gsum, bsum, asum = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        sum    := make([]int, len)
+        insum  := make([]int, len)
+        outsum := make([]int, len)
 
         yp = -radius * w
 
@@ -827,28 +815,23 @@ func (img *Image) StackBlur(radius int) {
 
             sir = &stack[i + radius]
 
-            sir[0] = r[yi]
-            sir[1] = g[yi]
-            sir[2] = b[yi]
-            sir[3] = a[yi]
-
+            for i := 0; i<len; i++ {
+                sir[i] = rgba[i][yi]
+            }
             rbs = r1 - abs(i)
 
-            rsum += int(r[yi]) * rbs
-            gsum += int(g[yi]) * rbs
-            bsum += int(b[yi]) * rbs
-            asum += int(a[yi]) * rbs
+            for i := 0; i<len; i++ {
+                sum[i] += int(rgba[i][yi]) * rbs
+            }
 
             if i > 0 {
-                rinsum += int(sir[0])
-                ginsum += int(sir[1])
-                binsum += int(sir[2])
-                ainsum += int(sir[3])
+                for i := 0; i<len; i++ {
+                    insum[i] += int(sir[i])
+                }
             } else {
-                routsum += int(sir[0])
-                goutsum += int(sir[1])
-                boutsum += int(sir[2])
-                aoutsum += int(sir[3])
+                for i := 0; i<len; i++ {
+                    outsum[i] += int(sir[i])
+                }
             }
 
             if i < hm {
@@ -861,25 +844,32 @@ func (img *Image) StackBlur(radius int) {
         stackpointer = radius
 
         for y = 0; y < h; y++ {
-            newpxl := img.ColorAllocateAlpha(int(dv[rsum]), int(dv[gsum]), int(dv[bsum]), int(dv[asum]))
+            var alpha byte
+
+            if keepalpha {
+                pxl := img.ColorsForIndex(pix(img, yi % w, yi / w))
+                alpha = byte(pxl["alpha"])
+            } else {
+                alpha = dv[sum[3]]
+            }
+
+            newpxl := img.ColorAllocateAlpha(int(dv[sum[0]]), int(dv[sum[1]]), int(dv[sum[2]]), int(alpha))
             if newpxl == -1 {
-                newpxl = img.ColorClosestAlpha(int(dv[rsum]), int(dv[gsum]), int(dv[bsum]), int(dv[asum]))
+                newpxl = img.ColorClosestAlpha(int(dv[sum[0]]), int(dv[sum[1]]), int(dv[sum[2]]), int(alpha))
             }
 
             img.SetPixel(yi % w, yi / w, newpxl)
 
-            rsum -= routsum
-            gsum -= goutsum
-            bsum -= boutsum
-            asum -= aoutsum
+            for i := 0; i<len; i++ {
+                sum[i] -= outsum[i]
+            }
 
             stackstart = stackpointer - radius + div
             sir = &stack[stackstart % div]
 
-            routsum -= int(sir[0])
-            goutsum -= int(sir[1])
-            boutsum -= int(sir[2])
-            aoutsum -= int(sir[3])
+            for i := 0; i<len; i++ {
+                outsum[i] -= int(sir[i])
+            }
 
             if x == 0 {
                 vmin[y] = min(y + r1, hm) * w
@@ -887,33 +877,19 @@ func (img *Image) StackBlur(radius int) {
 
             p := x + vmin[y]
 
-            sir[0] = r[p]
-            sir[1] = g[p]
-            sir[2] = b[p]
-            sir[3] = a[p]
-
-            rinsum += int(sir[0])
-            ginsum += int(sir[1])
-            binsum += int(sir[2])
-            ainsum += int(sir[3])
-
-            rsum += rinsum
-            gsum += ginsum
-            bsum += binsum
-            asum += ainsum
+            for i := 0; i<len; i++ {
+                sir[i] = rgba[i][p]
+                insum[i] += int(sir[i])
+                sum[i] += insum[i]
+            }
 
             stackpointer = (stackpointer + 1) % div
             sir = &stack[stackpointer]
 
-            routsum += int(sir[0])
-            goutsum += int(sir[1])
-            boutsum += int(sir[2])
-            aoutsum += int(sir[3])
-
-            rinsum -= int(sir[0])
-            ginsum -= int(sir[1])
-            binsum -= int(sir[2])
-            ainsum -= int(sir[3])
+            for i := 0; i<len; i++ {
+                outsum[i] += int(sir[i])
+                insum[i] -= int(sir[i])
+            }
 
             yi += w
         }
