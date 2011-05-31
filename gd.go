@@ -16,7 +16,10 @@ import "io/ioutil"
 import . "unsafe"
 //import "fmt"
 
-type Image struct {img C.gdImagePtr}
+type Image struct {
+    img C.gdImagePtr
+    getpixel func (p *Image, x, y int) Color
+}
 type Font  struct {fnt C.gdFontPtr}
 type Color int
 type Style int
@@ -36,12 +39,20 @@ const (
     FONTGIANT
 )
 
+func img(img C.gdImagePtr) *Image {
+    if (int)((*img).trueColor) != 0 {
+        return &Image{img: img, getpixel: gettruecolorpixel}
+    }
+
+    return &Image{img: img, getpixel: getpixel}
+}
+
 func Create(sx, sy int) *Image {
-    return &Image{img: C.gdImageCreate(C.int(sx), C.int(sy))}
+    return img(C.gdImageCreate(C.int(sx), C.int(sy)))
 }
 
 func CreateTrueColor(sx, sy int) *Image {
-    return &Image{img: C.gdImageCreateTrueColor(C.int(sx), C.int(sy))}
+    return img(C.gdImageCreateTrueColor(C.int(sx), C.int(sy)))
 }
 
 func CreateFromJpeg(infile string) *Image {
@@ -50,7 +61,7 @@ func CreateFromJpeg(infile string) *Image {
     if file != nil {
         defer C.fclose(file)
 
-        return &Image{img: C.gdImageCreateFromJpeg(file)}
+        return img(C.gdImageCreateFromJpeg(file))
     }
 
     panic(os.NewError("Error occurred while opening file."))
@@ -63,7 +74,7 @@ func CreateFromGif(infile string) *Image {
     if file != nil {
         defer C.fclose(file)
 
-        return &Image{img: C.gdImageCreateFromGif(file)}
+        return img(C.gdImageCreateFromGif(file))
     }
 
     panic(os.NewError("Error occurred while opening file."))
@@ -75,7 +86,7 @@ func CreateFromPng(infile string) *Image {
     if file != nil {
         defer C.fclose(file)
 
-        return &Image{img: C.gdImageCreateFromPng(file)}
+        return img(C.gdImageCreateFromPng(file))
     }
 
     panic(os.NewError("Error occurred while opening file."))
@@ -87,7 +98,7 @@ func CreateImageFromWbmp(infile string) *Image {
     if file != nil {
         defer C.fclose(file)
 
-        return &Image{img: C.gdImageCreateFromWBMP(file)}
+        return img(C.gdImageCreateFromWBMP(file))
     }
 
     panic(os.NewError("Error occurred while opening file."))
@@ -99,7 +110,7 @@ func CreateImageFromXbm(infile string) *Image {
     if file != nil {
         defer C.fclose(file)
 
-        return &Image{img: C.gdImageCreateFromXbm(file)}
+        return img(C.gdImageCreateFromXbm(file))
     }
 
     panic(os.NewError("Error occurred while opening file."))
@@ -112,7 +123,7 @@ func CreateImageFromXpm(infile string) (im *Image) {
         }
     }()
 
-    return &Image{img: C.gdImageCreateFromXpm(C.CString(infile))}
+    return img(C.gdImageCreateFromXpm(C.CString(infile)))
 }
 
 func (p *Image) Destroy() {
@@ -122,7 +133,7 @@ func (p *Image) Destroy() {
 }
 
 func (p *Image) SquareToCircle(radius int) *Image {
-    return &Image{img: C.gdImageSquareToCircle(p.img, C.int(radius))}
+    return img(C.gdImageSquareToCircle(p.img, C.int(radius)))
 }
 
 func (p *Image) Jpeg(out string, quality int) {
@@ -313,12 +324,16 @@ func (p *Image) SetPixel(x, y int, color Color) {
     C.gdImageSetPixel(p.img, C.int(x), C.int(y), C.int(color))
 }
 
-func (p *Image) GetPixel(x, y int) Color {
+func getpixel(p *Image, x, y int) Color {
     return (Color)(C.gdImageGetPixel(p.img, C.int(x), C.int(y)))
 }
 
-func (p *Image) GetTrueColorPixel(x, y int) Color {
-    return (Color)(C.gdImageGetTrueColorPixel(p.img, C.int(x), C.int(y)))
+func gettruecolorpixel(p *Image, x, y int) Color {
+    return (Color)(C.gdImageGetPixel(p.img, C.int(x), C.int(y)))
+}
+
+func (p *Image) ColorAt(x, y int) Color {
+    return (*p).getpixel(p, x, y)
 }
 
 func (p *Image) AABlend() {
@@ -489,21 +504,11 @@ func GetFonts() (list []string) {
     return
 }
 
-func (p *Image) getpixelfunc() (func(p *Image, x, y int) Color) {
-    if p.TrueColor() {
-        return func(p *Image, x, y int) Color { return p.GetTrueColorPixel(x,y) }
-    }
-
-    return func(p *Image, x, y int) Color { return p.GetPixel(x,y) }
-}
-
 func (p *Image) filter(flt func(r, g, b, a, x, y int) (int, int, int, int)) {
-    f := p.getpixelfunc()
-
     sx, sy := p.Sx(), p.Sy()
     for y := 0; y<sy; y++ {
         for x := 0; x<sx; x++ {
-            rgba := p.ColorsForIndex(f(p, x, y))
+            rgba := p.ColorsForIndex(p.ColorAt(x, y))
             r, g, b, a := flt(rgba["red"], rgba["green"], rgba["blue"], rgba["alpha"], x, y)
 
             newpxl := p.ColorAllocateAlpha(r, g, b, a)
@@ -617,8 +622,6 @@ func (p *Image) Convolution(filter [3][3]float32, filter_div, offset float32) {
         af = func(p *Image, c int) int { return (int)((*p.img).alpha[c]) }
     }
 
-    f := p.getpixelfunc()
-
     for y := 0; y<sy; y++ {
         for x := 0; x<sx; x++ {
             newr, newg, newb := float32(0), float32(0), float32(0)
@@ -627,7 +630,7 @@ func (p *Image) Convolution(filter [3][3]float32, filter_div, offset float32) {
                 yv := min(max(y - 1 + j, 0), sy - 1)
 
                 for i := 0; i<3; i++ {
-                    pxl := srcback.ColorsForIndex(f(srcback, min(max(x - 1 + i, 0), sx - 1), yv))
+                    pxl := srcback.ColorsForIndex(srcback.ColorAt(min(max(x - 1 + i, 0), sx - 1), yv))
 
                     newr += float32(pxl["red"]) * filter[j][i]
                     newg += float32(pxl["green"]) * filter[j][i]
@@ -643,7 +646,7 @@ func (p *Image) Convolution(filter [3][3]float32, filter_div, offset float32) {
             g := min(255, max(0, int(newg)))
             b := min(255, max(0, int(newb)))
 
-            newa := af(srcback, int(f(srcback, x, y)))
+            newa := af(srcback, int(srcback.ColorAt(x, y)))
 
             newpxl = p.ColorAllocateAlpha(r, g, b, newa)
             if newpxl == -1 {
@@ -687,8 +690,6 @@ func (img *Image) StackBlur(radius int, keepalpha bool) {
         return
     }
 
-    pix := img.getpixelfunc()
-
     w, h := int(img.Sx()), int(img.Sy())
     wm, hm, wh, div := w-1, h-1, w * h, radius * 2 + 1
 
@@ -727,7 +728,7 @@ func (img *Image) StackBlur(radius int, keepalpha bool) {
             yc := coords / w
             xc := coords % w
 
-            p := img.ColorsForIndex(pix(img, xc, yc))
+            p := img.ColorsForIndex(img.ColorAt(xc, yc))
 
             sir = &stack[i + radius]
             sir[0] = (byte)(p["red"])
@@ -774,7 +775,7 @@ func (img *Image) StackBlur(radius int, keepalpha bool) {
             yc := coords / w
             xc := coords % w
 
-            p := img.ColorsForIndex(pix(img, xc, yc))
+            p := img.ColorsForIndex(img.ColorAt(xc, yc))
 
             sir[0] = byte(p["red"])
             sir[1] = byte(p["green"])
@@ -841,18 +842,17 @@ func (img *Image) StackBlur(radius int, keepalpha bool) {
         stackpointer = radius
 
         for y = 0; y < h; y++ {
-            var alpha byte
+            var alpha int
 
             if keepalpha {
-                pxl := img.ColorsForIndex(pix(img, yi % w, yi / w))
-                alpha = byte(pxl["alpha"])
+                alpha = img.ColorsForIndex(img.ColorAt(yi % w, yi / w))["alpha"]
             } else {
-                alpha = dv[sum[3]]
+                alpha = int(dv[sum[3]])
             }
 
-            newpxl := img.ColorAllocateAlpha(int(dv[sum[0]]), int(dv[sum[1]]), int(dv[sum[2]]), int(alpha))
+            newpxl := img.ColorAllocateAlpha(int(dv[sum[0]]), int(dv[sum[1]]), int(dv[sum[2]]), alpha)
             if newpxl == -1 {
-                newpxl = img.ColorClosestAlpha(int(dv[sum[0]]), int(dv[sum[1]]), int(dv[sum[2]]), int(alpha))
+                newpxl = img.ColorClosestAlpha(int(dv[sum[0]]), int(dv[sum[1]]), int(dv[sum[2]]), alpha)
             }
 
             img.SetPixel(yi % w, yi / w, newpxl)
