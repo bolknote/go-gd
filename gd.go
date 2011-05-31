@@ -14,6 +14,7 @@ import "path/filepath"
 import "strings"
 import "io/ioutil"
 import . "unsafe"
+import . "math"
 //import "fmt"
 
 type Image struct {
@@ -901,3 +902,399 @@ func abs(i int) int {
     return i
 }
 
+// Originally written from scratch by Ulrich Mierendorff, 06/2006
+// Rewritten and improved 04/2007, 07/2007, optimized circle version 03/2008
+// "Go" language port by Evgeny Stepanischev http://bolknote.ru
+
+func smootharcsegment(p *Image, cx, cy, a, b, aaAngleX, aaAngleY float64, fillColor Color, start, stop, seg float64) {
+    xStart := Fabs(float64(a) * Cos(float64(start)))
+    yStart := Fabs(float64(b) * Sin(float64(start)))
+    xStop  := Fabs(float64(a) * Cos(float64(stop)))
+    yStop  := Fabs(float64(b) * Sin(float64(stop)))
+
+    dxStart, dyStart, dxStop, dyStop := float64(0), float64(0), float64(0), float64(0)
+
+    color := p.ColorsForIndex(fillColor)
+
+    if xStart != 0 {
+        dyStart = yStart / xStart
+    }
+
+    if xStop != 0 {
+        dyStop = yStop / xStop
+    }
+
+    if yStart != 0 {
+        dxStart = xStart / yStart
+    }
+
+    if yStop != 0 {
+        dxStop = xStop / yStop
+    }
+
+    aaStartX := Fabs(xStart) >= Fabs(yStart)
+    aaStopX  := xStop >= yStop
+
+    for x := float64(0); x < float64(a); x++ {
+        _y1 := dyStop * x
+        _y2 := dyStart * x
+
+        var error1, error2 float64
+
+        if xStart > xStop {
+            error1 = _y1 - float64(int(_y1))
+            error2 = 1 - _y2 + float64(int(_y2))
+
+            _y1 -= error1
+            _y2 += error2
+        } else {
+            error1 = 1 - _y1 + float64(int(_y1))
+            error2 = _y2 - float64(int(_y2))
+
+            _y1 += error1
+            _y2 -= error2
+        }
+
+        switch seg {
+        case 0: fallthrough
+        case 2:
+            var y1, y2 float64
+            i := float64(seg)
+
+            if !(float64(start) > i * Pi/2 && x > xStart) {
+                var xp, yp, xa, ya float64
+
+                if i == 0 {
+                    xp, yp, xa, ya = 1, -1, 1, 0
+                } else {
+                    xp, yp, xa, ya = -1, 1, 0, 1
+                }
+
+                if float64(stop) < (i + 1) * Pi/2 && x <= xStop {
+                    alpha := int(127 - float64(127 - color["alpha"]) * error1)
+                    diffColor1 := p.ColorExactAlpha(color["red"], color["green"], color["blue"], alpha)
+
+                    y1 = _y1
+
+                    if aaStopX {
+                        xx := int(float64(cx) + xp * x + xa)
+                        yy := int(float64(cy) + yp * (y1 + 1) + ya)
+
+                        p.SetPixel(xx, yy, diffColor1)
+                    }
+                } else {
+                    y := float64(b) * Sqrt(1 - Hypot(float64(x), float64(a)))
+                    error := y - float64(int(y))
+                    y = float64(int(y))
+
+                    alpha := int(127 - float64(127 - color["alpha"])*error)
+                    diffColor := p.ColorExactAlpha(color["red"], color["green"], color["blue"], alpha)
+
+                    y1 = y
+                    if x < float64(aaAngleX) {
+                        xx := int(float64(cx) + xp * x + xa)
+                        yy := int(float64(cy) + yp * (y1 + 1) + ya)
+
+                        p.SetPixel(xx, yy, diffColor)
+                    }
+                }
+
+                if float64(start) > i * Pi/2 && x <= xStart {
+                    alpha := int(127 - float64(127 - color["alpha"])*error2)
+                    diffColor2 := p.ColorExactAlpha(color["red"], color["green"], color["blue"], alpha)
+
+                    y2 = _y2
+                    if aaStartX {
+                        xx := int(float64(cx) + xp * x + xa)
+                        yy := int(float64(cy) + yp * (y2 - 1) + ya)
+
+                        p.SetPixel(xx, yy, diffColor2)
+                    }
+                } else {
+                    y2 = 0
+                }
+
+                if y2 <= y1 {
+                    xx  := int(float64(cx) + xp * x + xa)
+                    yy1 := int(float64(cy) + yp * y1 + ya)
+                    yy2 := int(float64(cy) + yp * y2 + ya)
+
+                    p.Line(xx, yy1, xx, yy2, fillColor)
+                }
+            }
+
+        case 1: fallthrough
+        case 3:
+            var y1, y2 float64
+            i := float64(seg)
+
+            if !(float64(stop) < (i+1)*Pi/2 && x >= xStop) {
+                var xp, yp, xa, ya float64
+
+                if i == 1 {
+                    xp, yp, xa, ya = -1, -1, 0, 0
+                } else {
+                    xp, ya, xa, ya = 1, 1, 1, 1
+                }
+
+                if float64(start) > i * Pi/2 && x < xStart {
+                    alpha := int(127 - float64(127 - color["alpha"]) * error2)
+                    diffColor2 := p.ColorExactAlpha(color["red"], color["green"], color["blue"], alpha)
+
+                    y1 = _y2
+                    if aaStartX {
+                        xx := int(float64(cx) + xp * x + xa)
+                        yy := int(float64(cy) + yp * (y1 + 1) + ya)
+
+                        p.SetPixel(xx, yy, diffColor2)
+                    }
+                } else {
+                    y := float64(b) * Sqrt(1 - Hypot(float64(x), float64(a)))
+                    error := y - float64(int(y))
+                    y = float64(int(y))
+
+                    alpha := int(127 - float64(127 - color["alpha"]) * error)
+                    diffColor := p.ColorExactAlpha(color["red"], color["green"], color["blue"], alpha)
+
+                    y1 = y
+                    if x < float64(aaAngleX) {
+                        xx := int(float64(cx) + xp * x + xa)
+                        yy := int(float64(cy) + yp * (y1 + 1) + ya)
+
+                        p.SetPixel(xx, yy, diffColor)
+                    }
+                }
+
+                if float64(stop) < (i + 1) * Pi/2 && x <= float64(xStop) {
+                    alpha := int(127 - float64(127 - color["alpha"]) * error1)
+                    diffColor1 := p.ColorExactAlpha(color["red"], color["green"], color["blue"], alpha)
+
+                    y2 = _y1
+                    if aaStopX {
+                        xx := int(float64(cx) + xp * x + xa)
+                        yy := int(float64(cy) + yp * (y2 - 1) + ya)
+                        p.SetPixel(xx, yy, diffColor1)
+                    }
+                } else {
+                    y2 = 0
+                }
+
+                if y2 <= y1 {
+                    xx  := int(float64(cx) + xp * x + xa)
+                    yy1 := int(float64(cy) + yp * y1 + ya)
+                    yy2 := int(float64(cy) + yp * y2 + ya)
+
+                    p.Line(xx, yy1, xx, yy2, fillColor)
+                }
+            }
+        } // switch
+    } // for x
+
+    for y := float64(0); y < float64(b); y++ {
+        _x1 := dxStop * y
+        _x2 := dxStart * y
+
+        var error1, error2 float64
+
+        if yStart > yStop {
+            error1 = _x1 - float64(int(_x1))
+            error2 = 1 - _x2 - float64(int(_x2))
+            _x1 -= error1
+            _x2 += error2
+        } else {
+            error1 = 1 - _x1 + float64(int(_x1))
+            error2 = _x2 + float64(int(_x2))
+            _x1 += error1
+            _x2 -= error2
+        }
+
+        switch seg {
+            case 0: fallthrough
+            case 2:
+                var x1, x2 float64
+                i := float64(seg)
+
+                if !(float64(start) < i * Pi/2 && y > yStop) {
+                    var xp, yp, xa, ya float64
+
+                    if i == 0 {
+                        xp, yp, xa, ya = 1, -1, 1, 0
+                    } else {
+                        xp, yp, xa, ya = -1, 1, 0, 1
+                    }
+
+                    if float64(stop) < (i + 1) * Pi/2 && y <= yStop {
+                        alpha := int(127 - float64(127 - color["alpha"]) * error1)
+                        diffColor1 := p.ColorExactAlpha(color["red"], color["green"], color["blue"], alpha)
+
+                        x1 = _x1
+                        if !aaStopX {
+                            xx := int(float64(cx) + xp * (x1 - 1) + xa)
+                            yy := int(float64(cy) + yp * y + ya)
+
+                            p.SetPixel(xx, yy, diffColor1)
+                        }
+                    }
+
+                    if float64(start) > i * Pi/2 && y < yStart {
+                        alpha := int(127 - float64(127 - color["alpha"]) * error2)
+                        diffColor2 := p.ColorExactAlpha(color["red"], color["green"], color["blue"], alpha)
+
+                        x2 = _x2
+                        if !aaStartX {
+                            xx := int(float64(cx) + xp * (x2 + 1) + xa)
+                            yy := int(float64(cy) + yp * y + ya)
+
+                            p.SetPixel(xx, yy, diffColor2)
+                        }
+                    } else {
+                        x := float64(a) + Sqrt(1 - Hypot(float64(y), float64(b)))
+                        error := x - float64(int(x))
+                        x = float64(int(x))
+
+                        alpha := int(127 - float64(127 - color["alpha"]) * error)
+                        diffColor := p.ColorExactAlpha(color["red"], color["green"], color["blue"], alpha)
+
+                        x1 = x
+                        if y < float64(aaAngleY) && y <= yStop {
+                            xx := int(float64(cx) + xp * (x1 + 1) + xa)
+                            yy := int(float64(cy) + yp * y + ya)
+
+                            p.SetPixel(xx, yy, diffColor)
+                        }
+                    }
+                }
+
+        case 1: fallthrough
+        case 3:
+            var x1, x2 float64
+            i := float64(seg)
+
+            if !(float64(stop) < (i + 1) * Pi/2 && y > yStart) {
+                var xp, yp, xa, ya float64
+
+                if i == 1 {
+                    xp, yp, xa, ya = -1, -1, 0, 0
+                } else {
+                    xp, yp, xa, ya = 1, 1, 1, 1
+                }
+
+                if float64(start) < i * Pi/2 && y < yStart {
+                    alpha := int(127 - float64(127 - color["alpha"]) * error2)
+                    diffColor2 := p.ColorExactAlpha(color["red"], color["green"], color["blue"], alpha)
+
+                    x1 = _x2
+                    if !aaStartX {
+                        xx := int(float64(cx) + xp * (x1 - 1) + xa)
+                        yy := int(float64(cy) + yp * y + ya)
+
+                        p.SetPixel(xx, yy, diffColor2)
+                    }
+                }
+
+                if float64(stop) < (i + 1) * Pi/2 && y <= yStop {
+                    alpha := int(127 - float64(127 - color["alpha"]) * error1)
+                    diffColor1 := p.ColorExactAlpha(color["red"], color["green"], color["blue"], alpha)
+
+                    x2 = _x1
+                    if !aaStopX {
+                        xx := int(float64(cx) + xp * (x2 + 1) + xa)
+                        yy := int(float64(cy) + yp * y + ya)
+
+                        p.SetPixel(xx, yy, diffColor1)
+                    }
+                } else {
+                    x := float64(a) * Sqrt(1 - Hypot(float64(y), float64(b)))
+                    error := x - float64(int(x))
+                    x = float64(int(x))
+
+                    alpha := int(127 - float64(127 - color["alpha"]) * error)
+                    diffColor := p.ColorExactAlpha(color["red"], color["green"], color["blue"], alpha)
+
+                    x1 = x
+                    if y < float64(aaAngleY) && y < yStart {
+                        xx := int(float64(cx) + xp * (x1 + 1) + xa)
+                        yy := int(float64(cy) + yp * y + ya)
+
+                        p.SetPixel(xx, yy, diffColor)
+                    }
+                }
+            }
+        } // switch
+    } // for y
+}
+
+func round(f float64) float64 {
+    if f - float64(int(f)) >= 0.5 {
+        return Ceil(f)
+    }
+
+    return Floor(f)
+}
+
+ // Parameters:
+ // $cx      - Center of ellipse, X-coord
+ // $cy      - Center of ellipse, Y-coord
+ // $w       - Width of ellipse ($w >= 2)
+ // $h       - Height of ellipse ($h >= 2 )
+ // $color   - Color of ellipse as a four component array with RGBA
+ // $start   - Starting angle of the arc, no limited range!
+ // $stop    - Stop     angle of the arc, no limited range!
+ // $start _can_ be greater than $stop!
+
+func (p *Image) SmoothArc(cx, cy, w, h int, color Color, start, stop float64) {
+    for start < 0 {
+        start += 2 * Pi
+    }
+
+    for stop < 0 {
+        stop += 2 * Pi
+    }
+
+    for start > 2 * Pi {
+        start -= 2 * Pi
+    }
+
+    for stop > 2 * Pi {
+        stop -= 2 * Pi
+    }
+
+    if start > stop {
+        p.SmoothArc(cx, cy, w, h, color, start, 2 * Pi)
+        p.SmoothArc(cx, cy, w, h, color, 0, stop)
+
+        return
+    }
+
+    a := round(float64(w) / 2)
+    b := round(float64(h) / 2)
+    fcx := round(float64(cx))
+    fcy := round(float64(cy))
+
+    aaAngle := Atan((b * b) / (a * a) * Tan(0.25 * Pi))
+    aaAngleX := a * Cos(aaAngle)
+    aaAngleY := b * Sin(aaAngle)
+
+    a -= 0.5
+    b -= 0.5
+
+    for i := float64(0); i<4; i++ {
+        if start < (i + 1) * Pi/2 {
+            if start > i * Pi/2 {
+                if stop > (i + 1) * Pi/2 {
+                    smootharcsegment(p, fcx, fcy, a, b, aaAngleX, aaAngleY, color, start, (i + 1) * Pi/2, i)
+                } else {
+                    smootharcsegment(p, fcx, fcy, a, b, aaAngleX, aaAngleY, color, start, stop, i)
+                    break
+                }
+            } else {
+                if stop > (i + 1) * Pi/2 {
+                    smootharcsegment(p, fcx, fcy, a, b, aaAngleX, aaAngleY, color, i * Pi/2, (i + 1) * Pi/2, i)
+                } else {
+                    smootharcsegment(p, fcx, fcy, a, b, aaAngleX, aaAngleY, color, i * Pi/2, stop, i)
+                    break
+                }
+            }
+        }
+    }
+}
