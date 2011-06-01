@@ -1136,7 +1136,7 @@ func smootharcsegment(p *Image, cx, cy, a, b, aaAngleX, aaAngleY float64, fillCo
                         }
                     }
 
-                    if float64(start) > i * Pi/2 && y < yStart {
+                    if start > i * Pi/2 && y < yStart {
                         alpha := int(127 - float64(127 - color["alpha"]) * error2)
                         diffColor2 := p.ColorExactAlpha(color["red"], color["green"], color["blue"], alpha)
 
@@ -1148,7 +1148,7 @@ func smootharcsegment(p *Image, cx, cy, a, b, aaAngleX, aaAngleY float64, fillCo
                             p.SetPixel(xx, yy, diffColor2)
                         }
                     } else {
-                        x := float64(a) + Sqrt(1 - Pow(float64(y), 2) / Pow(float64(b), 2))
+                        x := a * Sqrt(1 - Pow(y, 2) / Pow(b, 2))
                         error := x - float64(int(x))
                         x = float64(int(x))
 
@@ -1268,8 +1268,8 @@ func (p *Image) SmoothArc(cx, cy, w, h int, color Color, start, stop float64) {
 
     a := round(float64(w) / 2)
     b := round(float64(h) / 2)
-    fcx := round(float64(cx))
-    fcy := round(float64(cy))
+    fcx := float64(cx)
+    fcy := float64(cy)
 
     aaAngle := Atan((b * b) / (a * a) * Tan(0.25 * Pi))
     aaAngleX := a * Cos(aaAngle)
