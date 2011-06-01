@@ -1242,7 +1242,7 @@ func round(f float64) float64 {
  // $stop    - Stop     angle of the arc, no limited range!
  // $start _can_ be greater than $stop!
 
-func (p *Image) SmoothArc(cx, cy, w, h int, color Color, start, stop float64) {
+func (p *Image) SmoothFilledArc(cx, cy, w, h int, color Color, start, stop float64) {
     for start < 0 {
         start += 2 * Pi
     }
@@ -1260,8 +1260,8 @@ func (p *Image) SmoothArc(cx, cy, w, h int, color Color, start, stop float64) {
     }
 
     if start > stop {
-        p.SmoothArc(cx, cy, w, h, color, start, 2 * Pi)
-        p.SmoothArc(cx, cy, w, h, color, 0, stop)
+        p.SmoothFilledArc(cx, cy, w, h, color, start, 2 * Pi)
+        p.SmoothFilledArc(cx, cy, w, h, color, 0, stop)
 
         return
     }
@@ -1299,6 +1299,6 @@ func (p *Image) SmoothArc(cx, cy, w, h int, color Color, start, stop float64) {
     }
 }
 
-func (p *Image) SmoothEllipse(cx, cy, w, h int, color Color) {
-    p.SmoothArc(cx, cy, w, h, color, 0, 2 * Pi)
+func (p *Image) SmoothFilledEllipse(cx, cy, w, h int, color Color) {
+    p.SmoothFilledArc(cx, cy, w, h, color, 0, 2 * Pi)
 }
