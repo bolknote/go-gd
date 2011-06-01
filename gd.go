@@ -1114,7 +1114,7 @@ func smootharcsegment(p *Image, cx, cy, a, b, aaAngleX, aaAngleY float64, fillCo
                 var x1, x2 float64
                 i := float64(seg)
 
-                if !(float64(start) < i * Pi/2 && y > yStop) {
+                if !(float64(start) > i * Pi/2 && y > yStop) {
                     var xp, yp, xa, ya float64
 
                     if i == 0 {
@@ -1179,7 +1179,7 @@ func smootharcsegment(p *Image, cx, cy, a, b, aaAngleX, aaAngleY float64, fillCo
                     xp, yp, xa, ya = 1, 1, 1, 1
                 }
 
-                if float64(start) < i * Pi/2 && y < yStart {
+                if float64(start) > i * Pi/2 && y < yStart {
                     alpha := int(127 - float64(127 - color["alpha"]) * error2)
                     diffColor2 := p.ColorExactAlpha(color["red"], color["green"], color["blue"], alpha)
 
