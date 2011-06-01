@@ -1298,3 +1298,7 @@ func (p *Image) SmoothArc(cx, cy, w, h int, color Color, start, stop float64) {
         }
     }
 }
+
+func (p *Image) SmoothEllipse(cx, cy, w, h int, color Color) {
+    p.SmoothArc(cx, cy, w, h, color, 0, 2 * Pi)
+}
