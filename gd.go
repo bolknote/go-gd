@@ -1233,14 +1233,14 @@ func round(f float64) float64 {
 }
 
  // Parameters:
- // $cx      - Center of ellipse, X-coord
- // $cy      - Center of ellipse, Y-coord
- // $w       - Width of ellipse ($w >= 2)
- // $h       - Height of ellipse ($h >= 2 )
- // $color   - Color of ellipse as a four component array with RGBA
- // $start   - Starting angle of the arc, no limited range!
- // $stop    - Stop     angle of the arc, no limited range!
- // $start _can_ be greater than $stop!
+ // cx      - Center of ellipse, X-coord
+ // cy      - Center of ellipse, Y-coord
+ // w       - Width of ellipse ($w >= 2)
+ // h       - Height of ellipse ($h >= 2 )
+ // color   - Color of ellipse as a four component array with RGBA
+ // start   - Starting angle of the arc, no limited range!
+ // stop    - Stop     angle of the arc, no limited range!
+ // start _can_ be greater than $stop!
 
 func (p *Image) SmoothFilledArc(cx, cy, w, h int, color Color, start, stop float64) {
     for start < 0 {
