@@ -907,10 +907,10 @@ func abs(i int) int {
 // "Go" language port by Evgeny Stepanischev http://bolknote.ru
 
 func smootharcsegment(p *Image, cx, cy, a, b, aaAngleX, aaAngleY float64, fillColor Color, start, stop, seg float64) {
-    xStart := Fabs(float64(a) * Cos(float64(start)))
-    yStart := Fabs(float64(b) * Sin(float64(start)))
-    xStop  := Fabs(float64(a) * Cos(float64(stop)))
-    yStop  := Fabs(float64(b) * Sin(float64(stop)))
+    xStart := Fabs(a * Cos(start))
+    yStart := Fabs(b * Sin(start))
+    xStop  := Fabs(a * Cos(stop))
+    yStop  := Fabs(b * Sin(stop))
 
     dxStart, dyStart, dxStop, dyStop := float64(0), float64(0), float64(0), float64(0)
 
@@ -983,7 +983,7 @@ func smootharcsegment(p *Image, cx, cy, a, b, aaAngleX, aaAngleY float64, fillCo
                         p.SetPixel(xx, yy, diffColor1)
                     }
                 } else {
-                    y := float64(b) * Sqrt(1 - Hypot(float64(x), float64(a)))
+                    y := float64(b) * Sqrt(1 - Pow(float64(x), 2) / Pow(float64(a), 2))
                     error := y - float64(int(y))
                     y = float64(int(y))
 
@@ -1028,13 +1028,13 @@ func smootharcsegment(p *Image, cx, cy, a, b, aaAngleX, aaAngleY float64, fillCo
             var y1, y2 float64
             i := float64(seg)
 
-            if !(float64(stop) < (i+1)*Pi/2 && x >= xStop) {
+            if !(float64(stop) < (i+1)*Pi/2 && x > xStop) {
                 var xp, yp, xa, ya float64
 
                 if i == 1 {
                     xp, yp, xa, ya = -1, -1, 0, 0
                 } else {
-                    xp, ya, xa, ya = 1, 1, 1, 1
+                    xp, yp, xa, ya = 1, 1, 1, 1
                 }
 
                 if float64(start) > i * Pi/2 && x < xStart {
@@ -1049,7 +1049,7 @@ func smootharcsegment(p *Image, cx, cy, a, b, aaAngleX, aaAngleY float64, fillCo
                         p.SetPixel(xx, yy, diffColor2)
                     }
                 } else {
-                    y := float64(b) * Sqrt(1 - Hypot(float64(x), float64(a)))
+                    y := float64(b) * Sqrt(1 - Pow(float64(x), 2) / Pow(float64(a), 2))
                     error := y - float64(int(y))
                     y = float64(int(y))
 
@@ -1148,7 +1148,7 @@ func smootharcsegment(p *Image, cx, cy, a, b, aaAngleX, aaAngleY float64, fillCo
                             p.SetPixel(xx, yy, diffColor2)
                         }
                     } else {
-                        x := float64(a) + Sqrt(1 - Hypot(float64(y), float64(b)))
+                        x := float64(a) + Sqrt(1 - Pow(float64(y), 2) / Pow(float64(b), 2))
                         error := x - float64(int(x))
                         x = float64(int(x))
 
@@ -1204,7 +1204,7 @@ func smootharcsegment(p *Image, cx, cy, a, b, aaAngleX, aaAngleY float64, fillCo
                         p.SetPixel(xx, yy, diffColor1)
                     }
                 } else {
-                    x := float64(a) * Sqrt(1 - Hypot(float64(y), float64(b)))
+                    x := float64(a) * Sqrt(1 - Pow(float64(y), 2) / Pow(float64(b), 2))
                     error := x - float64(int(x))
                     x = float64(int(x))
 

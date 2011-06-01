@@ -17,6 +17,8 @@ func main() {
     black := pict.ColorAllocate(0, 0, 0)
     white := pict.ColorAllocate(255, 255, 255)
 
+    pict.SmoothArc(20, 20, 32, 32, white, 0, 2 * 3.14159265358)
+
     // http://www.php.net/manual/en/function.imagefilledellipse.php
     pict.FilledEllipse(100, 100, 40, 50, white)
 
