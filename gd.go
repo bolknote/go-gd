@@ -498,7 +498,7 @@ func searchfonts(dir string) (out []string) {
 }
 
 func GetFonts() (list []string) {
-	for _, dir := range strings.Split(C.DEFAULT_FONTPATH, C.PATHSEPARATOR, -1) {
+	for _, dir := range strings.Split(C.DEFAULT_FONTPATH, C.PATHSEPARATOR) {
 		list = append(list, searchfonts(dir)...)
 	}
 

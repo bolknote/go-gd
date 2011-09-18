@@ -1,4 +1,4 @@
-GOROOT=/Users/bolk/go
+GOROOT=/usr/local/Cellar/go/r59
 GOARCH=amd64
 
 include ${GOROOT}/src/Make.inc
