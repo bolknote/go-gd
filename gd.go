@@ -1,6 +1,9 @@
 package gd
 // Evgeny Stepanischev. 2011. http://bolknote.ru/ imbolk@gmail.com
 
+// #cgo CGO_CFLAGS: -I/usr/local/Cellar/gd/2.0.36RC1/include
+// #cgo CGO_LDFLAGS: -L/usr/local/Cellar/gd/2.0.36RC1/lib -lgd
+
 // #include <gd.h>
 // #include <gdfx.h>
 // #include <gdfontt.h>
