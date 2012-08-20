@@ -8,13 +8,14 @@ package gd
 // #include <gdfontmb.h>
 // #include <gdfontl.h>
 // #include <gdfontg.h>
+// #cgo LDFLAGS: -lgd
 import "C"
-import "os"
 import "path/filepath"
 import "strings"
 import "io/ioutil"
 import . "unsafe"
 import . "math"
+import "errors"
 //import "fmt"
 
 type Image struct {
@@ -65,7 +66,7 @@ func CreateFromJpeg(infile string) *Image {
 		return img(C.gdImageCreateFromJpeg(file))
 	}
 
-	panic(os.NewError("Error occurred while opening file."))
+	panic(errors.New("Error occurred while opening file."))
 }
 
 
@@ -78,7 +79,7 @@ func CreateFromGif(infile string) *Image {
 		return img(C.gdImageCreateFromGif(file))
 	}
 
-	panic(os.NewError("Error occurred while opening file."))
+	panic(errors.New("Error occurred while opening file."))
 }
 
 func CreateFromPng(infile string) *Image {
@@ -90,7 +91,7 @@ func CreateFromPng(infile string) *Image {
 		return img(C.gdImageCreateFromPng(file))
 	}
 
-	panic(os.NewError("Error occurred while opening file."))
+	panic(errors.New("Error occurred while opening file."))
 }
 
 func CreateImageFromWbmp(infile string) *Image {
@@ -102,7 +103,7 @@ func CreateImageFromWbmp(infile string) *Image {
 		return img(C.gdImageCreateFromWBMP(file))
 	}
 
-	panic(os.NewError("Error occurred while opening file."))
+	panic(errors.New("Error occurred while opening file."))
 }
 
 func CreateImageFromXbm(infile string) *Image {
@@ -114,13 +115,13 @@ func CreateImageFromXbm(infile string) *Image {
 		return img(C.gdImageCreateFromXbm(file))
 	}
 
-	panic(os.NewError("Error occurred while opening file."))
+	panic(errors.New("Error occurred while opening file."))
 }
 
 func CreateImageFromXpm(infile string) (im *Image) {
 	defer func() {
 		if e := recover(); e != nil {
-			panic(os.NewError("Error occurred while opening file."))
+			panic(errors.New("Error occurred while opening file."))
 		}
 	}()
 
@@ -145,7 +146,7 @@ func (p *Image) Jpeg(out string, quality int) {
 
 		C.gdImageJpeg(p.img, file, C.int(quality))
 	} else {
-		panic(os.NewError("Error occurred while opening file for writing."))
+		panic(errors.New("Error occurred while opening file for writing."))
 	}
 }
 
@@ -157,7 +158,7 @@ func (p *Image) Png(out string) {
 
 		C.gdImagePng(p.img, file)
 	} else {
-		panic(os.NewError("Error occurred while opening file for writing."))
+		panic(errors.New("Error occurred while opening file for writing."))
 	}
 }
 
@@ -169,7 +170,7 @@ func (p *Image) Gif(out string) {
 
 		C.gdImageGif(p.img, file)
 	} else {
-		panic(os.NewError("Error occurred while opening file for writing."))
+		panic(errors.New("Error occurred while opening file for writing."))
 	}
 }
 
@@ -181,7 +182,7 @@ func (p *Image) Wbmp(out string, foreground Color) {
 
 		C.gdImageWBMP(p.img, C.int(foreground), file)
 	} else {
-		panic(os.NewError("Error occurred while opening file for writing."))
+		panic(errors.New("Error occurred while opening file for writing."))
 	}
 }
 
@@ -411,7 +412,7 @@ func GetFont(size byte) *Font {
 		return &Font{fnt: C.gdFontGetGiant()}
 	}
 
-	panic(os.NewError("Invalid font size"))
+	panic(errors.New("Invalid font size"))
 }
 
 func (p *Image) Char(font *Font, x, y int, c string, color Color) {
@@ -474,19 +475,17 @@ func searchfonts(dir string) (out []string) {
 	files, e := ioutil.ReadDir(dir)
 	if e == nil {
 		for _, file := range files {
-			switch {
-			case file.IsDirectory():
-				entry := filepath.Join(dir, file.Name)
+			if name := file.Name(); file.IsDir() {
+				entry := filepath.Join(dir, name)
 
 				out = append(out, searchfonts(entry)...)
-
-			case file.IsRegular():
-				ext := strings.ToLower(filepath.Ext(file.Name)[1:])
+			} else {
+				ext := strings.ToLower(filepath.Ext(name)[1:])
 				whitelist := []string{"ttf", "otf", "cid", "cff", "pcf", "fnt", "bdr", "pfr", "pfa", "pfb", "afm"}
 
 				for _, wext := range whitelist {
 					if ext == wext {
-						out = append(out, file.Name)
+						out = append(out, name)
 						break
 					}
 				}
@@ -907,10 +906,10 @@ func abs(i int) int {
 // "Go" language port by Evgeny Stepanischev http://bolknote.ru
 
 func smootharcsegment(p *Image, cx, cy, a, b, aaAngleX, aaAngleY float64, fillColor Color, start, stop, seg float64) {
-	xStart := Fabs(a * Cos(start))
-	yStart := Fabs(b * Sin(start))
-	xStop := Fabs(a * Cos(stop))
-	yStop := Fabs(b * Sin(stop))
+	xStart := Abs(a * Cos(start))
+	yStart := Abs(b * Sin(start))
+	xStop := Abs(a * Cos(stop))
+	yStop := Abs(b * Sin(stop))
 
 	dxStart, dyStart, dxStop, dyStop := float64(0), float64(0), float64(0), float64(0)
 
@@ -932,7 +931,7 @@ func smootharcsegment(p *Image, cx, cy, a, b, aaAngleX, aaAngleY float64, fillCo
 		dxStop = xStop / yStop
 	}
 
-	aaStartX := Fabs(xStart) >= Fabs(yStart)
+	aaStartX := Abs(xStart) >= Abs(yStart)
 	aaStopX := xStop >= yStop
 
 	for x := float64(0); x < a; x++ {
