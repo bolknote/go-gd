@@ -1,11 +1,11 @@
 package main
 
-import "gd"
+import gd "github.com/bolknote/go-gd"
 import "fmt"
 
 func main() {
 	// http://www.php.net/manual/en/function.imagecreatefromjpeg.php
-	pict := gd.CreateFromJpeg("1.jpg")
+	pict := gd.CreateFromJpeg("source.jpg")
 
 	// http://www.php.net/manual/en/function.imagedestroy.php
 	defer pict.Destroy()

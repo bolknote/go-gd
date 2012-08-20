@@ -2,3 +2,8 @@ Go bingings for GD
 http://bolknote.ru
 Evgeny Stepanischev
 imbolk@gmail.com
+
+Installation:
+    go get github.com/bolknote/go-gd
+
+For test you can run sample.go (go run sample.jpg)
