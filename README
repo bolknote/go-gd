@@ -4,6 +4,7 @@ Evgeny Stepanischev
 imbolk@gmail.com
 
 Installation:
-    go get github.com/bolknote/go-gd
+    1. install libgd (http://download.osgeo.org/mapserver/libgd/gd-2.0.36RC1.tar.gz)
+    2. just run "go get github.com/bolknote/go-gd"
 
 For test you can run sample.go (go run sample.jpg)
