@@ -513,8 +513,10 @@ func GetFonts() (list []string) {
 			"/usr/openwin/lib/X11/fonts/Type1", ":"
 	}
 
-	for _, dir := range strings.Split(fontpath, pathseparator) {
-		list = append(list, searchfonts(dir)...)
+	if fontpath != "" {
+		for _, dir := range strings.Split(fontpath, pathseparator) {
+			list = append(list, searchfonts(dir)...)
+		}
 	}
 
 	return
