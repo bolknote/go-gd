@@ -472,28 +472,29 @@ func (p *Image) ColorsForIndex(index Color) map[string]int {
 }
 
 func searchfonts(dir string) (out []string) {
-	files, e := ioutil.ReadDir(dir)
-	if e == nil {
-		for _, file := range files {
-			if name := file.Name(); file.IsDir() {
-				entry := filepath.Join(dir, name)
+    files, e := ioutil.ReadDir(dir)
+    if e == nil {
+        for _, file := range files {
+            if name := file.Name(); file.IsDir() {
+                entry := filepath.Join(dir, name)
+                out = append(out, searchfonts(entry)...)
+            } else {
+                if ext := filepath.Ext(name); ext != "" {
+                    ext := strings.ToLower(ext[1:])
+                    whitelist := []string{"ttf", "otf", "cid", "cff", "pcf", "fnt", "bdr", "pfr", "pfa", "pfb", "afm"}
 
-				out = append(out, searchfonts(entry)...)
-			} else {
-				ext := strings.ToLower(filepath.Ext(name)[1:])
-				whitelist := []string{"ttf", "otf", "cid", "cff", "pcf", "fnt", "bdr", "pfr", "pfa", "pfb", "afm"}
+                    for _, wext := range whitelist {
+                        if ext == wext {
+                            out = append(out, name)
+                            break
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-				for _, wext := range whitelist {
-					if ext == wext {
-						out = append(out, name)
-						break
-					}
-				}
-			}
-		}
-	}
-
-	return
+    return
 }
 
 func GetFonts() (list []string) {
