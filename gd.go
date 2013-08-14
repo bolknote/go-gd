@@ -16,7 +16,7 @@ import "io/ioutil"
 import . "unsafe"
 import . "math"
 import "errors"
-//import "fmt"
+import "runtime"
 
 type Image struct {
 	img      C.gdImagePtr
@@ -497,7 +497,23 @@ func searchfonts(dir string) (out []string) {
 }
 
 func GetFonts() (list []string) {
-	for _, dir := range strings.Split(C.DEFAULT_FONTPATH, C.PATHSEPARATOR) {
+	fontpath, pathseparator := "", ""
+
+	switch runtime.GOOS {
+		case "darwin":
+			fontpath, pathseparator = "/usr/share/fonts/truetype:/System/Library/Fonts:/Library/Fonts", ":"
+
+		case "windows":
+			fontpath, pathseparator = `C:\WINDOWS\FONTS;C:\WINNT\FONTS`, ";"
+
+		default:
+			fontpath, pathseparator = "/usr/X11R6/lib/X11/fonts/TrueType:/usr/X11R6/lib/X11/fonts/truetype:"+
+			"/usr/X11R6/lib/X11/fonts/TTF:/usr/share/fonts/TrueType:/usr/share/fonts/truetype:"+
+			"/usr/openwin/lib/X11/fonts/TrueType:/usr/X11R6/lib/X11/fonts/Type1:/usr/lib/X11/fonts/Type1:"+
+			"/usr/openwin/lib/X11/fonts/Type1", ":"
+	}
+
+	for _, dir := range strings.Split(fontpath, pathseparator) {
 		list = append(list, searchfonts(dir)...)
 	}
 
