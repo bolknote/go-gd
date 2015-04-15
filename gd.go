@@ -66,13 +66,10 @@ func ImageToJpegBuffer(p *Image, quality int) []byte {
 	var imgSize int
 	pimgSize := (*C.int)(Pointer(&imgSize))
 
-	var buf Pointer
-	buf = C.gdImageJpegPtr(p.img, pimgSize, C.int(quality))
-	retval := C.GoBytes(buf, *pimgSize)
-	C.gdFree(buf)
-	pimgSize = nil
-	buf = nil
-	return retval
+	buf := C.gdImageJpegPtr(p.img, pimgSize, C.int(quality))
+	defer C.gdFree(buf)
+
+	return C.GoBytes(buf, *pimgSize)
 }
 
 func CreateFromJpeg(infile string) *Image {
