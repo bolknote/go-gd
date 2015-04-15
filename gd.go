@@ -57,6 +57,24 @@ func CreateTrueColor(sx, sy int) *Image {
 	return img(C.gdImageCreateTrueColor(C.int(sx), C.int(sy)))
 }
 
+func CreateFromJpegPtr(imagebuffer []byte) *Image {
+	return img(C.gdImageCreateFromJpegPtr(C.int(len(imagebuffer)), Pointer(&imagebuffer[0])))
+}
+
+func ImageToJpegBuffer(p *Image, quality int) []byte {
+
+	var imgSize int
+	pimgSize := (*C.int)(Pointer(&imgSize))
+
+	var buf Pointer
+	buf = C.gdImageJpegPtr(p.img, pimgSize, C.int(quality))
+	retval := C.GoBytes(buf, *pimgSize)
+	C.gdFree(buf)
+	pimgSize = nil
+	buf = nil
+	return retval
+}
+
 func CreateFromJpeg(infile string) *Image {
 	file := C.fopen(C.CString(infile), C.CString("rb"))
 
