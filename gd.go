@@ -448,7 +448,7 @@ func (p *Image) StringUp(font *Font, x, y int, s string, color Color) {
 	C.gdImageStringUp(p.img, (*font).fnt, C.int(x), C.int(y), (*C.uchar)(Pointer(C.CString(s))), C.int(color))
 }
 
-func (p *Image) StringFT(fg Color, fontname string, ptsize, angle float64, x, y int, str string) (brect [8]int) {
+func (p *Image) StringFT(fg Color, fontname string, ptsize, angle float64, x, y int, str string) (brect [8]int32) {
 	C.gdFontCacheSetup()
 	defer C.gdFontCacheShutdown()
 
