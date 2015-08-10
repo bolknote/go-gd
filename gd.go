@@ -10,7 +10,6 @@ package gd
 // #include <gdfontg.h>
 // #cgo LDFLAGS: -lgd -L/usr/local/lib/
 // #cgo CFLAGS: -I/usr/local/include/
-
 import "C"
 import "path/filepath"
 import "strings"
