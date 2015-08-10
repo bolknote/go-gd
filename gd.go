@@ -73,6 +73,17 @@ func ImageToJpegBuffer(p *Image, quality int) []byte {
 	return C.GoBytes(buf, *pimgSize)
 }
 
+func ImageToPngBuffer(p *Image) []byte {
+	var imgSize int
+	pimgSize := (*C.int)(Pointer(&imgSize))
+
+	buf := C.gdImagePngPtr(p.img, pimgSize)
+	defer C.gdFree(buf)
+
+	return C.GoBytes(buf, *pimgSize)
+}
+
+
 func CreateFromJpeg(infile string) *Image {
 	file := C.fopen(C.CString(infile), C.CString("rb"))
 
