@@ -1,4 +1,5 @@
 package gd
+
 // Evgeny Stepanischev. 2011. http://bolknote.ru/ imbolk@gmail.com
 
 // #include <gd.h>
@@ -62,6 +63,14 @@ func CreateFromJpegPtr(imagebuffer []byte) *Image {
 	return img(C.gdImageCreateFromJpegPtr(C.int(len(imagebuffer)), Pointer(&imagebuffer[0])))
 }
 
+func CreateFromPngPtr(imagebuffer []byte) *Image {
+	return img(C.gdImageCreateFromPngPtr(C.int(len(imagebuffer)), Pointer(&imagebuffer[0])))
+}
+
+func CreateFromGifPtr(imagebuffer []byte) *Image {
+	return img(C.gdImageCreateFromGifPtr(C.int(len(imagebuffer)), Pointer(&imagebuffer[0])))
+}
+
 func ImageToJpegBuffer(p *Image, quality int) []byte {
 
 	var imgSize int
@@ -83,6 +92,15 @@ func ImageToPngBuffer(p *Image) []byte {
 	return C.GoBytes(buf, *pimgSize)
 }
 
+func ImageToGifBuffer(p *Image) []byte {
+	var imgSize int
+	pimgSize := (*C.int)(Pointer(&imgSize))
+
+	buf := C.gdImageGifPtr(p.img, pimgSize)
+	defer C.gdFree(buf)
+
+	return C.GoBytes(buf, *pimgSize)
+}
 
 func CreateFromJpeg(infile string) *Image {
 	file := C.fopen(C.CString(infile), C.CString("rb"))
@@ -95,7 +113,6 @@ func CreateFromJpeg(infile string) *Image {
 
 	panic(errors.New("Error occurred while opening file."))
 }
-
 
 func CreateFromGif(infile string) *Image {
 	file := C.fopen(C.CString(infile), C.CString("rb"))
@@ -499,43 +516,43 @@ func (p *Image) ColorsForIndex(index Color) map[string]int {
 }
 
 func searchfonts(dir string) (out []string) {
-    files, e := ioutil.ReadDir(dir)
-    if e == nil {
-        for _, file := range files {
-            if name := file.Name(); file.IsDir() {
-                entry := filepath.Join(dir, name)
-                out = append(out, searchfonts(entry)...)
-            } else {
-                if ext := filepath.Ext(name); ext != "" {
-                    ext := strings.ToLower(ext[1:])
-                    whitelist := []string{"ttf", "otf", "cid", "cff", "pcf", "fnt", "bdr", "pfr", "pfa", "pfb", "afm"}
+	files, e := ioutil.ReadDir(dir)
+	if e == nil {
+		for _, file := range files {
+			if name := file.Name(); file.IsDir() {
+				entry := filepath.Join(dir, name)
+				out = append(out, searchfonts(entry)...)
+			} else {
+				if ext := filepath.Ext(name); ext != "" {
+					ext := strings.ToLower(ext[1:])
+					whitelist := []string{"ttf", "otf", "cid", "cff", "pcf", "fnt", "bdr", "pfr", "pfa", "pfb", "afm"}
 
-                    for _, wext := range whitelist {
-                        if ext == wext {
-                            out = append(out, name)
-                            break
-                        }
-                    }
-                }
-            }
-        }
-    }
+					for _, wext := range whitelist {
+						if ext == wext {
+							out = append(out, name)
+							break
+						}
+					}
+				}
+			}
+		}
+	}
 
-    return
+	return
 }
 
 func GetFonts() (list []string) {
 	fontpath, pathseparator := "", ""
 
 	switch runtime.GOOS {
-		case "darwin":
-			fontpath, pathseparator = "/usr/share/fonts/truetype:/System/Library/Fonts:/Library/Fonts", ":"
+	case "darwin":
+		fontpath, pathseparator = "/usr/share/fonts/truetype:/System/Library/Fonts:/Library/Fonts", ":"
 
-		case "windows":
-			fontpath, pathseparator = `C:\WINDOWS\FONTS;C:\WINNT\FONTS`, ";"
+	case "windows":
+		fontpath, pathseparator = `C:\WINDOWS\FONTS;C:\WINNT\FONTS`, ";"
 
-		default:
-			fontpath, pathseparator = "/usr/X11R6/lib/X11/fonts/TrueType:/usr/X11R6/lib/X11/fonts/truetype:"+
+	default:
+		fontpath, pathseparator = "/usr/X11R6/lib/X11/fonts/TrueType:/usr/X11R6/lib/X11/fonts/truetype:"+
 			"/usr/X11R6/lib/X11/fonts/TTF:/usr/share/fonts/TrueType:/usr/share/fonts/truetype:"+
 			"/usr/openwin/lib/X11/fonts/TrueType:/usr/X11R6/lib/X11/fonts/Type1:/usr/lib/X11/fonts/Type1:"+
 			"/usr/openwin/lib/X11/fonts/Type1", ":"
