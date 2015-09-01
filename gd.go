@@ -62,6 +62,14 @@ func CreateFromJpegPtr(imagebuffer []byte) *Image {
 	return img(C.gdImageCreateFromJpegPtr(C.int(len(imagebuffer)), Pointer(&imagebuffer[0])))
 }
 
+func CreateFromPngPtr(imagebuffer []byte) *Image {
+	return img(C.gdImageCreateFromPngPtr(C.int(len(imagebuffer)), Pointer(&imagebuffer[0])))
+}
+
+func CreateFromGifPtr(imagebuffer []byte) *Image {
+	return img(C.gdImageCreateFromGifPtr(C.int(len(imagebuffer)), Pointer(&imagebuffer[0])))
+}
+
 func ImageToJpegBuffer(p *Image, quality int) []byte {
 
 	var imgSize int
@@ -83,6 +91,15 @@ func ImageToPngBuffer(p *Image) []byte {
 	return C.GoBytes(buf, *pimgSize)
 }
 
+func ImageToGifBuffer(p *Image) []byte {
+	var imgSize int
+	pimgSize := (*C.int)(Pointer(&imgSize))
+
+	buf := C.gdImageGifPtr(p.img, pimgSize)
+	defer C.gdFree(buf)
+
+	return C.GoBytes(buf, *pimgSize)
+}
 
 func CreateFromJpeg(infile string) *Image {
 	file := C.fopen(C.CString(infile), C.CString("rb"))
