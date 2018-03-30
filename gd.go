@@ -552,12 +552,18 @@ func (p *Image) StringFT(fg Color, fontname string, ptsize, angle float64, x, y 
 }
 
 func pointsTogdPoints(points []Point) C.gdPointPtr {
-	mem := C.calloc(C.size_t(len(points)), C.size_t(C.sizeof_int * 2))
-	ints := (*[1<<30]C.int)(mem)
+	const maxlen = 1 << 30 // ought to be enough for anybody
+	alen := len(points)
+
+	if alen > maxlen {
+		panic("Too many arguments")
+	}
+
+	mem := C.calloc(C.size_t(alen), C.sizeof_gdPoint)
+	gdpoints := (*[maxlen]C.gdPoint)(mem)
 
 	for i, v := range points {
-		idx := i<<1
-		ints[idx], ints[idx+1] = C.int(v.X), C.int(v.Y)
+		gdpoints[i] = C.gdPoint{C.int(v.X), C.int(v.Y)}
 	}
 
 	return C.gdPointPtr(mem)
