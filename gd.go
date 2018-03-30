@@ -2,15 +2,20 @@ package gd
 
 // Evgeny Stepanischev. 2011. http://bolknote.ru/ imbolk@gmail.com
 
-// #include <gd.h>
-// #include <gdfx.h>
-// #include <gdfontt.h>
-// #include <gdfonts.h>
-// #include <gdfontmb.h>
-// #include <gdfontl.h>
-// #include <gdfontg.h>
-// #cgo LDFLAGS: -lgd -L/usr/local/lib/
-// #cgo CFLAGS: -I/usr/local/include/
+/*
+#include <gd.h>
+#include <gdfx.h>
+#include <gdfontt.h>
+#include <gdfonts.h>
+#include <gdfontmb.h>
+#include <gdfontl.h>
+#include <gdfontg.h>
+#cgo LDFLAGS: -lgd -L/usr/local/lib/
+#cgo CFLAGS: -I/usr/local/include/
+
+// Avoid CGO bug https://github.com/golang/go/issues/19832
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
+*/
 import "C"
 import "path/filepath"
 import "strings"
@@ -27,6 +32,10 @@ type Image struct {
 type Font struct{ fnt C.gdFontPtr }
 type Color int
 type Style int
+
+type Point struct {
+	X, Y int
+}
 
 const (
 	ARCPIE   Style = 0
@@ -485,16 +494,34 @@ func (p *Image) StringFT(fg Color, fontname string, ptsize, angle float64, x, y 
 	return
 }
 
-func (p *Image) Polygon(points [](struct{ x, y int }), c Color) {
-	C.gdImagePolygon(p.img, (C.gdPointPtr)(Pointer(&points)), C.int(len(points)), C.int(c))
+func pointsTogdPoints(points []Point) C.gdPointPtr {
+	mem := C.calloc(C.size_t(len(points)), C.size_t(C.sizeof_int * 2))
+	ints := (*[1<<30]C.int)(mem)
+
+	for i, v := range points {
+		idx := i<<1
+		ints[idx], ints[idx+1] = C.int(v.X), C.int(v.Y)
+	}
+
+	return C.gdPointPtr(mem)
 }
 
-func (p *Image) OpenPolygon(points [](struct{ x, y int }), c Color) {
-	C.gdImageOpenPolygon(p.img, (C.gdPointPtr)(Pointer(&points)), C.int(len(points)), C.int(c))
+func (p *Image) Polygon(points []Point, c Color) {
+	gdpoints := pointsTogdPoints(points)
+	C.gdImagePolygon(p.img, gdpoints, C.int(len(points)), C.int(c))
+	C.free(Pointer(gdpoints))
 }
 
-func (p *Image) FilledPolygon(points [](struct{ x, y int }), c Color) {
-	C.gdImageFilledPolygon(p.img, (C.gdPointPtr)(Pointer(&points)), C.int(len(points)), C.int(c))
+func (p *Image) OpenPolygon(points []Point, c Color) {
+	gdpoints := pointsTogdPoints(points)
+	C.gdImageOpenPolygon(p.img, gdpoints, C.int(len(points)), C.int(c))
+	C.free(Pointer(gdpoints))
+}
+
+func (p *Image) FilledPolygon(points []Point, c Color) {
+	gdpoints := pointsTogdPoints(points)
+	C.gdImageFilledPolygon(p.img, gdpoints, C.int(len(points)), C.int(c))
+	C.free(Pointer(gdpoints))
 }
 
 func (p *Image) ColorsForIndex(index Color) map[string]int {

@@ -17,6 +17,9 @@ func main() {
 	black := pict.ColorAllocate(0, 0, 0)
 	white := pict.ColorAllocate(255, 255, 255)
 
+	// http://php.net/manual/en/function.imagefilledpolygon.php
+	pict.FilledPolygon([]gd.Point{{200, 200}, {210, 210}, {212, 250}}, black)
+
 	pict.SmoothFilledEllipse(20, 20, 32, 32, white)
 
 	// http://www.php.net/manual/en/function.imagefilledellipse.php
