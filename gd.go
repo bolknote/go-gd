@@ -112,7 +112,12 @@ func ImageToGifBuffer(p *Image) []byte {
 }
 
 func CreateFromJpeg(infile string) *Image {
-	file := C.fopen(C.CString(infile), C.CString("rb"))
+	name, mode := C.CString(infile), C.CString("rb")
+
+	defer C.free(Pointer(name))
+	defer C.free(Pointer(mode))
+
+	file := C.fopen(name, mode)
 
 	if file != nil {
 		defer C.fclose(file)
@@ -124,7 +129,12 @@ func CreateFromJpeg(infile string) *Image {
 }
 
 func CreateFromGif(infile string) *Image {
-	file := C.fopen(C.CString(infile), C.CString("rb"))
+	name, mode := C.CString(infile), C.CString("rb")
+
+	defer C.free(Pointer(name))
+	defer C.free(Pointer(mode))
+
+	file := C.fopen(name, mode)
 
 	if file != nil {
 		defer C.fclose(file)
@@ -136,7 +146,12 @@ func CreateFromGif(infile string) *Image {
 }
 
 func CreateFromPng(infile string) *Image {
-	file := C.fopen(C.CString(infile), C.CString("rb"))
+	name, mode := C.CString(infile), C.CString("rb")
+
+	defer C.free(Pointer(name))
+	defer C.free(Pointer(mode))
+
+	file := C.fopen(name, mode)
 
 	if file != nil {
 		defer C.fclose(file)
@@ -148,7 +163,12 @@ func CreateFromPng(infile string) *Image {
 }
 
 func CreateImageFromWbmp(infile string) *Image {
-	file := C.fopen(C.CString(infile), C.CString("rb"))
+	name, mode := C.CString(infile), C.CString("rb")
+
+	defer C.free(Pointer(name))
+	defer C.free(Pointer(mode))
+
+	file := C.fopen(name, mode)
 
 	if file != nil {
 		defer C.fclose(file)
@@ -160,7 +180,12 @@ func CreateImageFromWbmp(infile string) *Image {
 }
 
 func CreateImageFromXbm(infile string) *Image {
-	file := C.fopen(C.CString(infile), C.CString("rb"))
+	name, mode := C.CString(infile), C.CString("rb")
+
+	defer C.free(Pointer(name))
+	defer C.free(Pointer(mode))
+
+	file := C.fopen(name, mode)
 
 	if file != nil {
 		defer C.fclose(file)
@@ -178,7 +203,10 @@ func CreateImageFromXpm(infile string) (im *Image) {
 		}
 	}()
 
-	return img(C.gdImageCreateFromXpm(C.CString(infile)))
+	name := C.CString(infile)
+	defer C.free(Pointer(name))
+
+	return img(C.gdImageCreateFromXpm(name))
 }
 
 func (p *Image) Destroy() {
@@ -192,7 +220,12 @@ func (p *Image) SquareToCircle(radius int) *Image {
 }
 
 func (p *Image) Jpeg(out string, quality int) {
-	file := C.fopen(C.CString(out), C.CString("wb"))
+	name, mode := C.CString(out), C.CString("wb")
+
+	defer C.free(Pointer(name))
+	defer C.free(Pointer(mode))
+
+	file := C.fopen(name, mode)
 
 	if file != nil {
 		defer C.fclose(file)
@@ -204,7 +237,12 @@ func (p *Image) Jpeg(out string, quality int) {
 }
 
 func (p *Image) Png(out string) {
-	file := C.fopen(C.CString(out), C.CString("wb"))
+	name, mode := C.CString(out), C.CString("wb")
+
+	defer C.free(Pointer(name))
+	defer C.free(Pointer(mode))
+
+	file := C.fopen(name, mode)
 
 	if file != nil {
 		defer C.fclose(file)
@@ -216,7 +254,12 @@ func (p *Image) Png(out string) {
 }
 
 func (p *Image) Gif(out string) {
-	file := C.fopen(C.CString(out), C.CString("wb"))
+	name, mode := C.CString(out), C.CString("wb")
+
+	defer C.free(Pointer(name))
+	defer C.free(Pointer(mode))
+
+	file := C.fopen(name, mode)
 
 	if file != nil {
 		defer C.fclose(file)
@@ -228,7 +271,12 @@ func (p *Image) Gif(out string) {
 }
 
 func (p *Image) Wbmp(out string, foreground Color) {
-	file := C.fopen(C.CString(out), C.CString("wb"))
+	name, mode := C.CString(out), C.CString("wb")
+
+	defer C.free(Pointer(name))
+	defer C.free(Pointer(mode))
+
+	file := C.fopen(name, mode)
 
 	if file != nil {
 		defer C.fclose(file)
@@ -477,19 +525,28 @@ func (p *Image) CharUp(font *Font, x, y int, c string, color Color) {
 }
 
 func (p *Image) String(font *Font, x, y int, s string, color Color) {
-	C.gdImageString(p.img, (*font).fnt, C.int(x), C.int(y), (*C.uchar)(Pointer(C.CString(s))), C.int(color))
+	str := Pointer(C.CString(s))
+	C.gdImageString(p.img, (*font).fnt, C.int(x), C.int(y), (*C.uchar)(str), C.int(color))
+	C.free(str)
 }
 
 func (p *Image) StringUp(font *Font, x, y int, s string, color Color) {
-	C.gdImageStringUp(p.img, (*font).fnt, C.int(x), C.int(y), (*C.uchar)(Pointer(C.CString(s))), C.int(color))
+	str := Pointer(C.CString(s))
+	C.gdImageStringUp(p.img, (*font).fnt, C.int(x), C.int(y), (*C.uchar)(str), C.int(color))
+	C.free(str)
 }
 
 func (p *Image) StringFT(fg Color, fontname string, ptsize, angle float64, x, y int, str string) (brect [8]int32) {
 	C.gdFontCacheSetup()
 	defer C.gdFontCacheShutdown()
 
-	C.gdImageStringFT(p.img, (*C.int)(Pointer(&brect)), C.int(fg), C.CString(fontname), C.double(ptsize),
-		C.double(angle), C.int(x), C.int(y), C.CString(str))
+	cfontname, cstr := C.CString(fontname), C.CString(str)
+
+	C.gdImageStringFT(p.img, (*C.int)(Pointer(&brect)), C.int(fg), cfontname, C.double(ptsize),
+		C.double(angle), C.int(x), C.int(y), cstr)
+
+	C.free(Pointer(cfontname))
+	C.free(Pointer(cstr))
 
 	return
 }
