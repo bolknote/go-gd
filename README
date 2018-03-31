@@ -4,7 +4,7 @@ Evgeny Stepanischev
 imbolk@gmail.com
 
 Installation:
-    1. install libgd (https://bitbucket.org/libgd/gd-libgd/downloads/libgd-2.1.0.tar.bz2)
+    1. install libgd (https://libgd.github.io/)
     2. just run "go get github.com/bolknote/go-gd"
 
 For test you can run sample.go (go run sample.jpg)
