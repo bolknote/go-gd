@@ -77,6 +77,10 @@ func CreateFromGifPtr(imagebuffer []byte) *Image {
 	return img(C.gdImageCreateFromGifPtr(C.int(len(imagebuffer)), Pointer(&imagebuffer[0])))
 }
 
+func CreateFromWebpPtr(imagebuffer []byte) *Image {
+	return img(C.gdImageCreateFromWebpPtr(C.int(len(imagebuffer)), Pointer(&imagebuffer[0])))
+}
+
 func ImageToJpegBuffer(p *Image, quality int) []byte {
 	var imgSize int
 	pimgSize := (*C.int)(Pointer(&imgSize))
@@ -102,6 +106,16 @@ func ImageToGifBuffer(p *Image) []byte {
 	pimgSize := (*C.int)(Pointer(&imgSize))
 
 	buf := C.gdImageGifPtr(p.img, pimgSize)
+	defer C.gdFree(buf)
+
+	return C.GoBytes(buf, *pimgSize)
+}
+
+func ImageToWebpBuffer(p *Image, quantization int) []byte {
+	var imgSize int
+	pimgSize := (*C.int)(Pointer(&imgSize))
+
+	buf := C.gdImageWebpPtrEx(p.img, pimgSize, quantization)
 	defer C.gdFree(buf)
 
 	return C.GoBytes(buf, *pimgSize)
@@ -174,6 +188,24 @@ func CreateFromWbmp(infile string) *Image {
 		defer C.fclose(file)
 
 		return img(C.gdImageCreateFromWBMP(file))
+	}
+
+	panic(errors.New("Error occurred while opening file."))
+}
+
+// http://php.net/manual/en/function.imagecreatefromwebp.php
+func CreateImageFromWebp(infile string) *Image {
+	name, mode := C.CString(infile), C.CString("rb")
+
+	defer C.free(Pointer(name))
+	defer C.free(Pointer(mode))
+
+	file := C.fopen(name, mode)
+
+	if file != nil {
+		defer C.fclose(file)
+
+		return img(C.gdImageCreateFromWebp(file))
 	}
 
 	panic(errors.New("Error occurred while opening file."))
@@ -275,6 +307,25 @@ func (p *Image) Gif(out string) {
 		panic(errors.New("Error occurred while opening file for writing."))
 	}
 }
+
+// http://php.net/manual/en/function.imagewebp.php
+func (p *Image) Webp(out string, quantization int) {
+	name, mode := C.CString(out), C.CString("wb")
+
+	defer C.free(Pointer(name))
+	defer C.free(Pointer(mode))
+
+	file := C.fopen(name, mode)
+
+	if file != nil {
+		defer C.fclose(file)
+
+		C.gdImageWebpEx(p.img, file, C.int(quantization))
+	} else {
+		panic(errors.New("Error occurred while opening file for writing."))
+	}
+}
+
 
 // http://php.net/manual/en/function.imagewbmp.php
 func (p *Image) Wbmp(out string, foreground Color) {
