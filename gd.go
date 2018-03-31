@@ -382,17 +382,8 @@ func (p *Image) FilledEllipse(cx, cy, w, h int, color Color) {
 	C.gdImageFilledEllipse(p.img, C.int(cx), C.int(cy), C.int(w), C.int(h), C.int(color))
 }
 
-/* NB: unable to import gdImageEllipse. Something wrong in CGO I think:
-
-Undefined symbols:
-  "_gdImageEllipse", referenced from:
-        __cgo_6af175c8cf06_Cfunc_gdImageEllipse in gd.cgo2.o
-             (maybe you meant: __cgo_6af175c8cf06_Cfunc_gdImageEllipse)
-ld: symbol(s) not found
-collect2: ld returned 1 exit status
-*/
 func (p *Image) Ellipse(cx, cy, w, h int, color Color) {
-	C.gdImageArc(p.img, C.int(cx), C.int(cy), C.int(w), C.int(h), 360, 360, C.int(color))
+	C.gdImageEllipse(p.img, C.int(cx), C.int(cy), C.int(w), C.int(h), C.int(color))
 }
 
 func (p *Image) FillToBorder(x, y, border, color Color) {
