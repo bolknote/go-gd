@@ -115,7 +115,7 @@ func ImageToWebpBuffer(p *Image, quantization int) []byte {
 	var imgSize int
 	pimgSize := (*C.int)(Pointer(&imgSize))
 
-	buf := C.gdImageWebpPtrEx(p.img, pimgSize, quantization)
+	buf := C.gdImageWebpPtrEx(p.img, pimgSize, C.int(quantization))
 	defer C.gdFree(buf)
 
 	return C.GoBytes(buf, *pimgSize)
