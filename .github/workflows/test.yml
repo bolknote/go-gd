@@ -1,0 +1,31 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        go-version: ["1.22.x", "stable"]
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }} / Go ${{ matrix.go-version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Install libgd on Linux
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libgd-dev
+
+      - name: Install libgd on macOS
+        if: runner.os == 'macOS'
+        run: brew install gd
+
+      - name: Check
+        run: make check

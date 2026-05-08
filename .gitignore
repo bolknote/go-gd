@@ -1,0 +1,10 @@
+# Binaries
+bin/
+
+# Go coverage and profiling
+*.coverprofile
+coverage.out
+*.prof
+
+# Example output artifacts
+out.png
