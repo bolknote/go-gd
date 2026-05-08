@@ -27,5 +27,5 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install gd
 
-      - name: Check
-        run: make check
+      - name: Run full verification suite
+        run: make analyze check
