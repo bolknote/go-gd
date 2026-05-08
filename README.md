@@ -161,6 +161,18 @@ make check
 `make check` lists the linked libgd API, runs the coverage audit through `go test`, and runs `go vet`.
 Tests skip optional paths when the linked libgd does not support a feature. JPEG byte-for-byte golden tests are intentionally avoided because compression output can vary between libgd builds.
 
+## Linting
+
+Run:
+
+```sh
+make analyze
+```
+
+`make analyze` runs `go vet` and `golangci-lint`.
+The project intentionally relies on `golangci-lint` as the single lint runner; checks such as `staticcheck`, `errcheck`, `ineffassign`, and `revive` are enabled via `.golangci.yml`.
+`gosec` is not part of the default flow for this CLI-focused project to avoid noisy reports.
+
 The root contains project metadata only. The library package is under `pkg/gd`, examples are under `examples/`, and image fixtures are under `testdata/`.
 
 ## Migrating From v1
