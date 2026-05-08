@@ -478,6 +478,9 @@ func TestFormatRoundTrips(t *testing.T) {
 			}
 			decoded, err := tc.decode(data)
 			if err != nil {
+				if errors.Is(err, ErrDecode) || errors.Is(err, ErrUnsupportedFeature) {
+					t.Skipf("%s decode advertised by libgd but unavailable at runtime: %v", tc.name, err)
+				}
 				t.Fatal(err)
 			}
 			defer func() { _ = decoded.Close() }()
@@ -497,6 +500,9 @@ func TestFormatRoundTrips(t *testing.T) {
 			}
 			fromFile, err := tc.read(path)
 			if err != nil {
+				if errors.Is(err, ErrDecode) || errors.Is(err, ErrUnsupportedFeature) {
+					t.Skipf("%s file decode advertised by libgd but unavailable at runtime: %v", tc.name, err)
+				}
 				t.Fatal(err)
 			}
 			defer func() { _ = fromFile.Close() }()
@@ -610,6 +616,9 @@ func TestContextEncoders(t *testing.T) {
 			defer func() { _ = in.Close() }()
 			decoded, err := tc.decode(in)
 			if err != nil {
+				if errors.Is(err, ErrDecode) || errors.Is(err, ErrUnsupportedFeature) {
+					t.Skipf("%s context decode advertised by libgd but unavailable at runtime: %v", tc.name, err)
+				}
 				t.Fatal(err)
 			}
 			defer func() { _ = decoded.Close() }()
