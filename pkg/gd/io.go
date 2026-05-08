@@ -11,6 +11,7 @@ static int go_gd_ferror(FILE *f) { return ferror(f); }
 */
 import "C"
 import (
+	"errors"
 	"fmt"
 	"syscall"
 	"unsafe"
@@ -195,8 +196,7 @@ func withWriteFile(path string, fn func(*C.FILE) error) error {
 		return err
 	}
 	if ferr := fn(file); ferr != nil {
-		_ = cleanup()
-		return ferr
+		return errors.Join(ferr, cleanup())
 	}
 	return cleanup()
 }
@@ -208,8 +208,7 @@ func withAppendFile(path string, fn func(*C.FILE) error) error {
 		return err
 	}
 	if ferr := fn(file); ferr != nil {
-		_ = cleanup()
-		return ferr
+		return errors.Join(ferr, cleanup())
 	}
 	return cleanup()
 }

@@ -13,6 +13,7 @@ static void go_gd_ctx_free(gdIOCtxPtr ctx) {
 */
 import "C"
 import (
+	"errors"
 	"runtime"
 	"unsafe"
 )
@@ -397,8 +398,7 @@ func (im *Image) EncodeXBM(name string, foreground Color) ([]byte, error) {
 		return nil, err
 	}
 	if err := im.EncodeXBMContext(ctx, name, foreground); err != nil {
-		_ = ctx.Close()
-		return nil, err
+		return nil, errors.Join(err, ctx.Close())
 	}
 	return ctx.Extract()
 }
@@ -413,8 +413,7 @@ func (im *Image) EncodeXBMFile(path, name string, foreground Color) error {
 		return err
 	}
 	if err := im.EncodeXBMContext(ctx, name, foreground); err != nil {
-		_ = ctx.Close()
-		return err
+		return errors.Join(err, ctx.Close())
 	}
 	return ctx.Close()
 }
