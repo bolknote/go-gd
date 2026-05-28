@@ -111,8 +111,10 @@ func NewTrueColor(width, height int) (*Image, error) {
 
 // Close releases the underlying gdImagePtr.
 //
-// Close is idempotent. After Close, methods that read state (Width, Height,
-// TrueColor, ...) return zero values; mutating methods return ErrClosedImage.
+// Close is idempotent. After Close, methods that read state return their
+// documented closed-image value (Width, Height and ColorsTotal report 0,
+// TrueColor and Interlaced report false, TransparentColor reports -1, ...);
+// mutating methods return ErrClosedImage.
 func (im *Image) Close() error {
 	if im == nil || im.ptr == nil {
 		return nil
